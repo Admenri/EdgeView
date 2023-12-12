@@ -1,0 +1,228 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="entry">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{a956086c-7726-4cf6-aa13-b2a2da3f763e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ec">
+      <UniqueIdentifier>{a30a0c15-8e43-478b-96c2-4f24b57c5e3e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\base">
+      <UniqueIdentifier>{097c15a6-f5fa-4ad2-8d7b-de8d493f0ef2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="res">
+      <UniqueIdentifier>{f5d5b89c-37a4-4d13-9563-0419aa39fd2c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="dllmain.cc">
+      <Filter>entry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\struct_class.cc">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\base\bind\callback_helpers.cc">
+      <Filter>src\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\base\bind\callback_internal.cc">
+      <Filter>src\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\base\bind\callback_list.cc">
+      <Filter>src\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\base\debug\logging.cc">
+      <Filter>src\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\base\memory\atomic_flag.cc">
+      <Filter>src\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\base\memory\lock_impl.cc">
+      <Filter>src\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\base\memory\ref_counted.cc">
+      <Filter>src\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\base\memory\weak_ptr.cc">
+      <Filter>src\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ev_env.cc">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\webview_host.cc">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\event_notify.cc">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ev_browser.cc">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\util.cc">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ev_msgpump.cc">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\modp_b64.cc">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ev_contextmenu.cc">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ev_network.cc">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ev_dom.cc">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ev_download.cc">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ev_frame.cc">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\ec\EdgeView.e">
+      <Filter>ec</Filter>
+    </None>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\util.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\struct_class.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\bind\bind.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\bind\bind_internal.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\bind\callback.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\bind\callback_forward.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\bind\callback_helpers.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\bind\callback_internal.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\bind\callback_list.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\bind\cancelable_callback.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\buildflags\build.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\buildflags\compiler_specific.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\debug\logging.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\memory\atomic_flag.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\memory\atomic_ref_count.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\memory\auto_reset.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\memory\lock.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\memory\lock_impl.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\memory\raw_scoped_refptr_mismatch_checker.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\memory\ref_counted.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\memory\scoped_refptr.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\memory\weak_ptr.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\third_party\concurrentqueue\blockingconcurrentqueue.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\third_party\concurrentqueue\concurrentqueue.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\third_party\concurrentqueue\lightweightsemaphore.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\thread\thread_checker.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\base\template_util.h">
+      <Filter>src\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\edgeview_data.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ev_env.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\webview_host.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\event_notify.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ev_browser.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>res</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ev_msgpump.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\modp_b64.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\modp_b64_data.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Utf8Conv.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ev_contextmenu.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ev_network.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ev_dom.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ev_download.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ev_frame.h">
+      <Filter>src</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="edgeview.rc">
+      <Filter>res</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
