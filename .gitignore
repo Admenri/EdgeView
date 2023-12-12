@@ -350,3 +350,5 @@ FodyWeavers.xsd
 
 .vs/
 EdgeView/Release
+/epltest/tabControl
+/epltest
