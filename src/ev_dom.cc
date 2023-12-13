@@ -7,7 +7,8 @@ namespace edgeview {
 
 static void ExecuteScriptAsync(scoped_refptr<BrowserData> browser,
                                const std::string& script) {
-  browser->parent->PostUITask(base::BindOnce(
+  // Force async task post
+  browser->parent->PostEvent(base::BindOnce(
       [](scoped_refptr<BrowserData> obj, const std::string& script) {
         obj->core_webview->ExecuteScript(Utf8Conv::Utf8ToUtf16(script).c_str(),
                                          nullptr);
@@ -19,7 +20,8 @@ static json ExecuteScriptSync(scoped_refptr<BrowserData> browser,
                               const std::string& script) {
   json ret_obj;
 
-  browser->parent->PostUITask(base::BindOnce(
+  // Force async task post
+  browser->parent->PostEvent(base::BindOnce(
       [](scoped_refptr<BrowserData> obj, scoped_refptr<Semaphore> sync,
          const std::string& script, json* ret_obj) {
         obj->core_webview->ExecuteScript(
@@ -44,7 +46,8 @@ static json ExecuteScriptSync(scoped_refptr<BrowserData> browser,
 
 static void CallCDPMethodAsync(scoped_refptr<BrowserData> browser,
                                const std::string& method, const json& args) {
-  browser->parent->PostUITask(base::BindOnce(
+  // Force async task post
+  browser->parent->PostEvent(base::BindOnce(
       [](scoped_refptr<BrowserData> obj, const std::string& method,
          const json& args) {
         obj->core_webview->CallDevToolsProtocolMethod(
@@ -58,7 +61,8 @@ static json CallCDPMethodSync(scoped_refptr<BrowserData> browser,
                               const std::string& method, const json& args) {
   json ret_obj;
 
-  browser->parent->PostUITask(base::BindOnce(
+  // Force async task post
+  browser->parent->PostEvent(base::BindOnce(
       [](scoped_refptr<BrowserData> obj, scoped_refptr<Semaphore> sync,
          const std::string& method, const json& args, json* ret_obj) {
         obj->core_webview->CallDevToolsProtocolMethod(
@@ -110,7 +114,10 @@ LPCSTR WINAPI Element_Get_InnerText(DOMOperation* obj, LPCSTR selector,
       std::format("document.querySelectorAll(\"{}\")[{}].innerText",
                   std::string(selector), index));
 
-  return WrapComString(ret.template get<std::string>().c_str());
+  std::string ret_val;
+  ret.get_to(ret_val);
+
+  return WrapComString(ret_val.c_str());
 }
 
 void WINAPI Element_Put_InnerText(DOMOperation* obj, LPCSTR selector, int index,
@@ -128,7 +135,10 @@ LPCSTR WINAPI Element_Get_InnerHTML(DOMOperation* obj, LPCSTR selector,
       std::format("document.querySelectorAll(\"{}\")[{}].innerHTML",
                   std::string(selector), index));
 
-  return WrapComString(ret.template get<std::string>().c_str());
+  std::string ret_val;
+  ret.get_to(ret_val);
+
+  return WrapComString(ret_val.c_str());
 }
 
 void WINAPI Element_Put_InnerHTML(DOMOperation* obj, LPCSTR selector, int index,
@@ -183,7 +193,10 @@ LPCSTR WINAPI Element_Get_OuterText(DOMOperation* obj, LPCSTR selector,
       std::format("document.querySelectorAll(\"{}\")[{}].outerText",
                   std::string(selector), index));
 
-  return WrapComString(ret.template get<std::string>().c_str());
+  std::string ret_val;
+  ret.get_to(ret_val);
+
+  return WrapComString(ret_val.c_str());
 }
 
 LPCSTR WINAPI Element_Get_OuterHTML(DOMOperation* obj, LPCSTR selector,
@@ -193,7 +206,10 @@ LPCSTR WINAPI Element_Get_OuterHTML(DOMOperation* obj, LPCSTR selector,
       std::format("document.querySelectorAll(\"{}\")[{}].outerHTML",
                   std::string(selector), index));
 
-  return WrapComString(ret.template get<std::string>().c_str());
+  std::string ret_val;
+  ret.get_to(ret_val);
+
+  return WrapComString(ret_val.c_str());
 }
 
 LPCSTR WINAPI Element_Get_Value(DOMOperation* obj, LPCSTR selector, int index) {
@@ -202,7 +218,10 @@ LPCSTR WINAPI Element_Get_Value(DOMOperation* obj, LPCSTR selector, int index) {
       std::format("document.querySelectorAll(\"{}\")[{}].value",
                   std::string(selector), index));
 
-  return WrapComString(ret.template get<std::string>().c_str());
+  std::string ret_val;
+  ret.get_to(ret_val);
+
+  return WrapComString(ret_val.c_str());
 }
 
 void WINAPI Element_Put_Value(DOMOperation* obj, LPCSTR selector, int index,
@@ -220,7 +239,10 @@ LPCSTR WINAPI Element_Get_Attribute(DOMOperation* obj, LPCSTR selector,
       std::format("document.querySelectorAll(\"{}\")[{}].getAttribute(\"{}\")",
                   std::string(selector), index, std::string(attr)));
 
-  return WrapComString(ret.template get<std::string>().c_str());
+  std::string ret_val;
+  ret.get_to(ret_val);
+
+  return WrapComString(ret_val.c_str());
 }
 
 void WINAPI Element_Put_Attribute(DOMOperation* obj, LPCSTR selector, int index,
@@ -238,7 +260,10 @@ BOOL WINAPI Element_Get_Checked(DOMOperation* obj, LPCSTR selector, int index) {
       std::format("document.querySelectorAll(\"{}\")[{}].checked == true",
                   std::string(selector), index));
 
-  return ret.template get<bool>();
+  bool ret_val = false;
+  ret.get_to(ret_val);
+
+  return ret_val;
 }
 
 void WINAPI Element_Put_Checked(DOMOperation* obj, LPCSTR selector, int index,
