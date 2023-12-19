@@ -19,6 +19,7 @@ DWORD m_pVfTable_DownloadOperation;
 DWORD m_pVfTable_DownloadConfirm;
 DWORD m_pVfTable_Frame;
 DWORD m_pVfTable_DOM;
+DWORD m_pVfTable_BrowserExtension;
 
 }  // namespace eClass
 
@@ -73,6 +74,9 @@ EV_EXPORTS(RegisterClass, void)(DWORD **pNewClass, EClassVTable nType) {
         break;
       case EClassVTable::VT_DOM:
         eClass::m_pVfTable_DOM = dwVfptr;
+        break;
+      case EClassVTable::VT_BROWSEREXTENSION:
+        eClass::m_pVfTable_BrowserExtension = dwVfptr;
         break;
 
       default:
@@ -140,6 +144,9 @@ EV_EXPORTS(ObjectAddRef, void)(LPVOID obj, EClassVTable nType) {
     case EClassVTable::VT_DOM:
       static_cast<edgeview::DOMOperation *>(obj)->AddRef();
       break;
+    case EClassVTable::VT_BROWSEREXTENSION:
+      static_cast<edgeview::ExtensionData *>(obj)->AddRef();
+      break;
 
     default:
       break;
@@ -197,6 +204,9 @@ EV_EXPORTS(ObjectRelease, void)(LPVOID obj, EClassVTable nType) {
       break;
     case EClassVTable::VT_DOM:
       static_cast<edgeview::DOMOperation *>(obj)->Release();
+      break;
+    case EClassVTable::VT_BROWSEREXTENSION:
+      static_cast<edgeview::ExtensionData *>(obj)->Release();
       break;
 
     default:

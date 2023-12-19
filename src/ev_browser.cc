@@ -4,6 +4,7 @@
 #include "ev_browser.h"
 #include "ev_dom.h"
 #include "ev_env.h"
+#include "ev_extension.h"
 #include "ev_frame.h"
 #include "ev_network.h"
 #include "webview_host.h"
@@ -1673,6 +1674,43 @@ void WINAPI SetFilechooserInterception(BrowserData* obj, BOOL enable) {
       scoped_refptr(obj), enable));
 }
 
+void WINAPI LoadBrowserExtension(BrowserData* obj, LPCSTR path, DWORD* retObj) {
+  scoped_refptr<ExtensionData> data = new ExtensionData();
+
+  obj->parent->PostUITask(base::BindOnce(
+      [](scoped_refptr<BrowserData> self, scoped_refptr<Semaphore> semaphore,
+         std::string path, scoped_refptr<ExtensionData> data) {
+        WRL::ComPtr<ICoreWebView2Profile> profile = nullptr;
+        self->core_webview->get_Profile(&profile);
+
+        data->parent = self->parent;
+
+        WRL::ComPtr<ICoreWebView2Profile8> profile_ptr = nullptr;
+        profile->QueryInterface<ICoreWebView2Profile8>(&profile_ptr);
+
+        profile_ptr->AddBrowserExtension(
+            Utf8Conv::Utf8ToUtf16(path).c_str(),
+            WRL::Callback<
+                ICoreWebView2ProfileAddBrowserExtensionCompletedHandler>(
+                [data, semaphore](HRESULT errorCode,
+                                  ICoreWebView2BrowserExtension* extension) {
+                  data->core_extension = extension;
+
+                  semaphore->Notify();
+                  return S_OK;
+                })
+                .Get());
+      },
+      scoped_refptr(obj), obj->parent->semaphore(), std::string(path), data));
+  obj->parent->SyncWaitIfNeed();
+
+  if (retObj) {
+    data->AddRef();
+    retObj[1] = (DWORD)data.get();
+    retObj[2] = (DWORD)fnExtensionDataTable;
+  }
+}
+
 }  // namespace
 
 DWORD fnBrowserTable[] = {
@@ -1730,6 +1768,7 @@ DWORD fnBrowserTable[] = {
     (DWORD)CallCDPMethodAsync,
     (DWORD)SetCDPEventReceiver,
     (DWORD)SetFilechooserInterception,
+    (DWORD)LoadBrowserExtension,
 };  // namespace edgeview
 
 namespace {

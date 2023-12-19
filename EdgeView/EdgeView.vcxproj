@@ -194,6 +194,7 @@
     <ClCompile Include="..\src\ev_dom.cc" />
     <ClCompile Include="..\src\ev_download.cc" />
     <ClCompile Include="..\src\ev_env.cc" />
+    <ClCompile Include="..\src\ev_extension.cc" />
     <ClCompile Include="..\src\ev_frame.cc" />
     <ClCompile Include="..\src\ev_msgpump.cc" />
     <ClCompile Include="..\src\ev_network.cc" />
@@ -240,6 +241,7 @@
     <ClInclude Include="..\src\ev_dom.h" />
     <ClInclude Include="..\src\ev_download.h" />
     <ClInclude Include="..\src\ev_env.h" />
+    <ClInclude Include="..\src\ev_extension.h" />
     <ClInclude Include="..\src\ev_frame.h" />
     <ClInclude Include="..\src\ev_msgpump.h" />
     <ClInclude Include="..\src\ev_network.h" />

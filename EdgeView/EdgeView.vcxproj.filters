@@ -85,6 +85,9 @@
     <ClCompile Include="..\src\ev_frame.cc">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\ev_extension.cc">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ec\EdgeView.e">
@@ -217,6 +220,9 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\src\ev_frame.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ev_extension.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

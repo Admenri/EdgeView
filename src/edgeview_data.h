@@ -238,4 +238,12 @@ struct DOMOperation : public base::RefCounted<DOMOperation> {
   DOMOperation() = default;
 };
 
+struct ExtensionData : public base::RefCounted<ExtensionData> {
+  base::WeakPtr<EnvironmentData> parent;
+
+  WRL::ComPtr<ICoreWebView2BrowserExtension> core_extension;
+
+  ExtensionData() = default;
+};
+
 }  // namespace edgeview

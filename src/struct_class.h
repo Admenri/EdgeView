@@ -26,6 +26,7 @@ enum class EClassVTable {
   VT_DOWNLOADCONFIRM,
   VT_FRAME,
   VT_DOM,
+  VT_BROWSEREXTENSION,
 };
 
 EV_EXPORTS(RegisterClass, void)(DWORD **pNewClass, EClassVTable nType);
@@ -59,6 +60,7 @@ extern DWORD m_pVfTable_DownloadOperation;
 extern DWORD m_pVfTable_DownloadConfirm;
 extern DWORD m_pVfTable_Frame;
 extern DWORD m_pVfTable_DOM;
+extern DWORD m_pVfTable_BrowserExtension;
 
 }  // namespace eClass
 
