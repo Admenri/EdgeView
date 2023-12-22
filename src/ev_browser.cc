@@ -475,6 +475,9 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
             raw_frame->QueryInterface<ICoreWebView2Frame3>(&frame_obj);
 
             scoped_refptr<FrameData> frame = new FrameData(frame_obj);
+            frame->browser = weak_ptr;
+            weak_ptr->frames.push_back(frame);
+            
             frame_obj->add_NavigationStarting(
                 WRL::Callback<ICoreWebView2FrameNavigationStartingEventHandler>(
                     [weak_ptr = frame->weak_ptr_.GetWeakPtr()](
@@ -530,7 +533,6 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
                     .Get(),
                 nullptr);
 
-            weak_ptr->frames.push_back(frame);
             return S_OK;
           })
           .Get(),
@@ -1266,6 +1268,8 @@ void WINAPI ClearVirtualHostMapping(BrowserData* obj, LPCSTR host) {
 uint32_t WINAPI GetFrameCount(BrowserData* obj) { return obj->frames.size(); }
 
 void WINAPI GetFrameAt(BrowserData* obj, int idx, DWORD* retObj) {
+  if (idx < 0 || idx >= obj->frames.size()) return;
+
   scoped_refptr<FrameData> frame = obj->frames[idx];
   if (retObj) {
     frame->AddRef();
