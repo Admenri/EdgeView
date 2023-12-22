@@ -477,7 +477,7 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
             scoped_refptr<FrameData> frame = new FrameData(frame_obj);
             frame->browser = weak_ptr;
             weak_ptr->frames.push_back(frame);
-            
+
             frame_obj->add_NavigationStarting(
                 WRL::Callback<ICoreWebView2FrameNavigationStartingEventHandler>(
                     [weak_ptr = frame->weak_ptr_.GetWeakPtr()](
@@ -1715,6 +1715,28 @@ void WINAPI LoadBrowserExtension(BrowserData* obj, LPCSTR path, DWORD* retObj) {
   }
 }
 
+LPCSTR WINAPI GetProfileName(BrowserData* obj) {
+  LPSTR cpp_url = nullptr;
+
+  obj->parent->PostUITask(base::BindOnce(
+      [](scoped_refptr<BrowserData> self, scoped_refptr<Semaphore> sync,
+         LPSTR* cpp_url) {
+        WRL::ComPtr<ICoreWebView2Profile> profile = nullptr;
+        self->core_webview->get_Profile(&profile);
+
+        LPWSTR url = nullptr;
+        profile->get_ProfileName(&url);
+
+        *cpp_url = WrapComString(url);
+
+        sync->Notify();
+      },
+      scoped_refptr(obj), obj->parent->semaphore(), &cpp_url));
+  obj->parent->SyncWaitIfNeed();
+
+  return cpp_url;
+}
+
 }  // namespace
 
 DWORD fnBrowserTable[] = {
@@ -1773,6 +1795,7 @@ DWORD fnBrowserTable[] = {
     (DWORD)SetCDPEventReceiver,
     (DWORD)SetFilechooserInterception,
     (DWORD)LoadBrowserExtension,
+    (DWORD)GetProfileName,
 };  // namespace edgeview
 
 namespace {
