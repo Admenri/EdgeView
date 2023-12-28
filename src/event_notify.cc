@@ -529,6 +529,12 @@ void BrowserEventDispatcher::OnResourceRequested(json request_parameter) {
     browser->Release();
     callback->Release();
   }
+
+  FreeComString(network_id);
+  FreeComString(frame_id);
+  FreeComString(resource_type);
+
+  FreeJSONRequest(request.get());
 }
 
 void BrowserEventDispatcher::OnResourceReceiveResponse(json request_parameter) {
@@ -610,6 +616,14 @@ void BrowserEventDispatcher::OnResourceReceiveResponse(json request_parameter) {
     browser->Release();
     callback->Release();
   }
+
+  FreeComString(network_id);
+  FreeComString(frame_id);
+  FreeComString(resource_type);
+
+  FreeComString(response->response_phrase);
+
+  FreeJSONRequest(request.get());
 }
 
 BOOL BrowserEventDispatcher::OnKeyEvent(
@@ -812,6 +826,11 @@ void BrowserEventDispatcher::OnConsoleMessage(json args) {
 			pop ecx;
     }
     browser->Release();
+
+    FreeComString(pSrc);
+    FreeComString(pLvl);
+    FreeComString(pTxt);
+    FreeComString(pURL);
   }
 }
 

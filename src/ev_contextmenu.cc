@@ -41,31 +41,31 @@ void WINAPI GetTargetParams(ContextMenuParams* obj,
         target->get_IsEditable(&data->editable);
         target->get_IsRequestedForMainFrame(&data->main_frame);
 
-        LPWSTR page_url = nullptr;
+        wil::unique_cotaskmem_string page_url = nullptr;
         target->get_PageUri(&page_url);
         data->page_url = WrapComString(page_url);
 
-        LPWSTR frame_url = nullptr;
+        wil::unique_cotaskmem_string frame_url = nullptr;
         target->get_FrameUri(&frame_url);
         data->frame_url = WrapComString(frame_url);
 
         target->get_HasLinkUri(&data->has_link_url);
-        LPWSTR link_url = nullptr;
+        wil::unique_cotaskmem_string link_url = nullptr;
         target->get_LinkUri(&link_url);
         data->link_url = WrapComString(link_url);
 
         target->get_HasLinkText(&data->has_link_text);
-        LPWSTR link_text = nullptr;
+        wil::unique_cotaskmem_string link_text = nullptr;
         target->get_LinkText(&link_text);
         data->link_text = WrapComString(link_text);
 
         target->get_HasSourceUri(&data->has_source_url);
-        LPWSTR source_url = nullptr;
+        wil::unique_cotaskmem_string source_url = nullptr;
         target->get_SourceUri(&source_url);
         data->source_url = WrapComString(source_url);
 
         target->get_HasSourceUri(&data->has_selection);
-        LPWSTR selection = nullptr;
+        wil::unique_cotaskmem_string selection = nullptr;
         target->get_SelectionText(&selection);
         data->selection = WrapComString(selection);
 
@@ -261,7 +261,7 @@ LPCSTR WINAPI GetName(ContextMenuItem* obj) {
   obj->browser->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<ContextMenuItem> self, scoped_refptr<Semaphore> sync,
          LPSTR* cpp_url) {
-        LPWSTR url = nullptr;
+        wil::unique_cotaskmem_string url = nullptr;
         self->core_item->get_Name(&url);
         *cpp_url = WrapComString(url);
 
@@ -279,7 +279,7 @@ LPCSTR WINAPI GetLabel(ContextMenuItem* obj) {
   obj->browser->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<ContextMenuItem> self, scoped_refptr<Semaphore> sync,
          LPSTR* cpp_url) {
-        LPWSTR url = nullptr;
+        wil::unique_cotaskmem_string url = nullptr;
         self->core_item->get_Label(&url);
         *cpp_url = WrapComString(url);
 
@@ -313,7 +313,7 @@ LPCSTR WINAPI GetShortcutDesc(ContextMenuItem* obj) {
   obj->browser->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<ContextMenuItem> self, scoped_refptr<Semaphore> sync,
          LPSTR* cpp_url) {
-        LPWSTR url = nullptr;
+        wil::unique_cotaskmem_string url = nullptr;
         self->core_item->get_ShortcutKeyDescription(&url);
         *cpp_url = WrapComString(url);
 

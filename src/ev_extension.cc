@@ -20,7 +20,7 @@ LPCSTR WINAPI GetExtensionId(ExtensionData* obj) {
   obj->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<ExtensionData> self, scoped_refptr<Semaphore> sync,
          LPSTR* cpp_url) {
-        LPWSTR url = nullptr;
+        wil::unique_cotaskmem_string url = nullptr;
         self->core_extension->get_Id(&url);
         *cpp_url = WrapComString(url);
 
@@ -38,7 +38,7 @@ LPCSTR WINAPI GetName(ExtensionData* obj) {
   obj->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<ExtensionData> self, scoped_refptr<Semaphore> sync,
          LPSTR* cpp_url) {
-        LPWSTR url = nullptr;
+        wil::unique_cotaskmem_string url = nullptr;
         self->core_extension->get_Name(&url);
         *cpp_url = WrapComString(url);
 

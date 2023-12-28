@@ -12,7 +12,7 @@ LPCSTR WINAPI GetName(FrameData* obj) {
   obj->browser->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<FrameData> self, scoped_refptr<Semaphore> sync,
          LPSTR* cpp_url) {
-        LPWSTR url = nullptr;
+        wil::unique_cotaskmem_string url = nullptr;
         self->core_frame->get_Name(&url);
         *cpp_url = WrapComString(url);
 

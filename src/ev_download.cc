@@ -122,7 +122,7 @@ LPCSTR WINAPI DO_GetURL(DownloadOperation* obj) {
   obj->browser->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<DownloadOperation> self, scoped_refptr<Semaphore> sync,
          LPSTR* cpp_url) {
-        LPWSTR url = nullptr;
+        wil::unique_cotaskmem_string url = nullptr;
         self->core_operation->get_Uri(&url);
         *cpp_url = WrapComString(url);
 
@@ -140,7 +140,7 @@ LPCSTR WINAPI DO_GetResultFilePath(DownloadOperation* obj) {
   obj->browser->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<DownloadOperation> self, scoped_refptr<Semaphore> sync,
          LPSTR* cpp_url) {
-        LPWSTR url = nullptr;
+        wil::unique_cotaskmem_string url = nullptr;
         self->core_operation->get_ResultFilePath(&url);
         *cpp_url = WrapComString(url);
 
@@ -158,7 +158,7 @@ LPCSTR WINAPI DO_GetMimeType(DownloadOperation* obj) {
   obj->browser->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<DownloadOperation> self, scoped_refptr<Semaphore> sync,
          LPSTR* cpp_url) {
-        LPWSTR url = nullptr;
+        wil::unique_cotaskmem_string url = nullptr;
         self->core_operation->get_MimeType(&url);
         *cpp_url = WrapComString(url);
 
@@ -176,7 +176,7 @@ LPCSTR WINAPI DO_GetDisposition(DownloadOperation* obj) {
   obj->browser->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<DownloadOperation> self, scoped_refptr<Semaphore> sync,
          LPSTR* cpp_url) {
-        LPWSTR url = nullptr;
+        wil::unique_cotaskmem_string url = nullptr;
         self->core_operation->get_ContentDisposition(&url);
         *cpp_url = WrapComString(url);
 
@@ -218,7 +218,7 @@ LPCSTR WINAPI DO_GetEstimatedEndTime(DownloadOperation* obj) {
   obj->browser->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<DownloadOperation> self, scoped_refptr<Semaphore> sync,
          LPSTR* cpp_url) {
-        LPWSTR url = nullptr;
+        wil::unique_cotaskmem_string url = nullptr;
         self->core_operation->get_EstimatedEndTime(&url);
         *cpp_url = WrapComString(url);
 

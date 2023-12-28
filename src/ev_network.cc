@@ -33,7 +33,7 @@ using CookieData = struct {
 
 static void TransferCookie(WRL::ComPtr<ICoreWebView2Cookie> from,
                            CookieData* to) {
-  LPWSTR value = nullptr;
+  wil::unique_cotaskmem_string value = nullptr;
 
   from->get_Name(&value);
   to->name = WrapComString(value);
@@ -176,7 +176,14 @@ void TransferRequestJSON(const json& from, RequestData* to) {
       WrapComString(from["referrerPolicy"].template get<std::string>().c_str());
 }
 
-void TransferRequestJSON(RequestData* from, json& ori) {}
+void FreeJSONRequest(RequestData* obj) {
+  FreeComString(obj->url);
+  FreeComString(obj->method);
+  FreeComString(obj->headers);
+  FreeComString(obj->post_data);
+  FreeComString(obj->initial_priority);
+  FreeComString(obj->referrer_policy);
+}
 
 void WINAPI ContinueRequest(ResourceRequestCallback* obj,
                             RequestData* request) {

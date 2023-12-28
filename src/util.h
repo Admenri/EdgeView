@@ -4,6 +4,9 @@
 
 #include <Shlwapi.h>
 #include <stdint.h>
+#include <wil/com.h>
+#include <wil/resource.h>
+#include <wil/win32_helpers.h>
 #include <windows.h>
 #include <wrl/event.h>
 
@@ -22,6 +25,7 @@ namespace edgeview {
 
 LPSTR WrapComString(LPCWSTR oriStr);
 LPSTR WrapComString(LPCSTR oriStr);
+LPSTR WrapComString(const wil::unique_cotaskmem_string& str);
 LPBYTE WrapEStream(const std::string& mem);
 
 #define HIGH_32BIT(v) v >> 32
@@ -29,6 +33,8 @@ LPBYTE WrapEStream(const std::string& mem);
 
 EV_EXPORTS(MemAlloc, LPVOID)(size_t size);
 EV_EXPORTS(MemFree, BOOL)(LPVOID mem);
+
+#define FreeComString(ptr) edgeview_MemFree((LPVOID)ptr)
 
 LPBYTE GetAryElementInf(void* pAryData, LPINT pnElementCount);
 void FreeAryElement(void* pAryData);

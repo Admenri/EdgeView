@@ -107,7 +107,7 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
           [weak_ptr](ICoreWebView2* sender, IUnknown* args) {
             weak_ptr->parent->PostEvent(base::BindOnce(
                 [](base::WeakPtr<BrowserData> weak_ptr) {
-                  LPWSTR raw_title;
+                  wil::unique_cotaskmem_string raw_title;
                   weak_ptr->core_webview->get_DocumentTitle(&raw_title);
 
                   weak_ptr->dispatcher->OnDocumentTitleChanged(
@@ -151,7 +151,7 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
                 [](base::WeakPtr<BrowserData> weak_ptr,
                    WRL::ComPtr<ICoreWebView2NavigationStartingEventArgs2>
                        args) {
-                  LPWSTR raw_url = nullptr;
+                  wil::unique_cotaskmem_string raw_url = nullptr;
                   args->get_Uri(&raw_url);
                   LPCSTR url = WrapComString(raw_url);
 
@@ -169,12 +169,12 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
                   BOOL has_current = FALSE;
                   while (SUCCEEDED(iter->get_HasCurrentHeader(&has_current)) &&
                          has_current) {
-                    LPWSTR raw_key = nullptr, raw_value = nullptr;
+                    wil::unique_cotaskmem_string raw_key = nullptr, raw_value = nullptr;
                     iter->GetCurrentHeader(&raw_key, &raw_value);
 
-                    headers.append(raw_key);
+                    headers.append(raw_key.get());
                     headers.append(L": ");
-                    headers.append(raw_value);
+                    headers.append(raw_value.get());
                     headers.append(L"\r\n");
 
                     iter->MoveNext(nullptr);
@@ -294,17 +294,17 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
                 [](base::WeakPtr<BrowserData> weak_ptr,
                    WRL::ComPtr<ICoreWebView2ScriptDialogOpeningEventArgs> args,
                    scoped_refptr<ScriptDialogDelegate> delegate) {
-                  LPWSTR raw_url = nullptr;
+                  wil::unique_cotaskmem_string raw_url = nullptr;
                   args->get_Uri(&raw_url);
 
                   COREWEBVIEW2_SCRIPT_DIALOG_KIND kind =
                       COREWEBVIEW2_SCRIPT_DIALOG_KIND();
                   args->get_Kind(&kind);
 
-                  LPWSTR raw_message = nullptr;
+                  wil::unique_cotaskmem_string raw_message = nullptr;
                   args->get_Message(&raw_message);
 
-                  LPWSTR raw_deftext = nullptr;
+                  wil::unique_cotaskmem_string raw_deftext = nullptr;
                   args->get_DefaultText(&raw_deftext);
 
                   weak_ptr->dispatcher->OnScriptDialogRequested(
@@ -353,7 +353,7 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
             weak_ptr->parent->PostEvent(base::BindOnce(
                 [](base::WeakPtr<BrowserData> weak_ptr,
                    scoped_refptr<PermissionDelegate> delegate) {
-                  LPWSTR url = nullptr;
+                  wil::unique_cotaskmem_string url = nullptr;
                   delegate->core_delegate->get_Uri(&url);
 
                   COREWEBVIEW2_PERMISSION_KIND kind;
@@ -408,7 +408,7 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
             weak_ptr->parent->PostEvent(base::BindOnce(
                 [](base::WeakPtr<BrowserData> weak_ptr,
                    scoped_refptr<BasicAuthenticationCallback> callback) {
-                  LPWSTR url = nullptr, challenge = nullptr;
+                  wil::unique_cotaskmem_string url = nullptr, challenge = nullptr;
                   callback->core_callback->get_Uri(&url);
                   callback->core_callback->get_Challenge(&challenge);
 
@@ -426,9 +426,9 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
       WRL::Callback<ICoreWebView2WebMessageReceivedEventHandler>(
           [weak_ptr](ICoreWebView2* sender,
                      ICoreWebView2WebMessageReceivedEventArgs* args) {
-            LPWSTR src_url = nullptr;
+            wil::unique_cotaskmem_string src_url = nullptr;
             args->get_Source(&src_url);
-            LPWSTR json_args = nullptr;
+            wil::unique_cotaskmem_string json_args = nullptr;
             args->get_WebMessageAsJson(&json_args);
 
             weak_ptr->parent->PostEvent(base::BindOnce(
@@ -483,9 +483,9 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
                     [weak_ptr = frame->weak_ptr_.GetWeakPtr()](
                         ICoreWebView2Frame* sender,
                         ICoreWebView2NavigationStartingEventArgs* args) {
-                      LPWSTR raw_url = nullptr;
+                      wil::unique_cotaskmem_string raw_url = nullptr;
                       args->get_Uri(&raw_url);
-                      weak_ptr->url = Utf8Conv::Utf16ToUtf8(raw_url);
+                      weak_ptr->url = Utf8Conv::Utf16ToUtf8(raw_url.get());
                       return S_OK;
                     })
                     .Get(),
@@ -513,9 +513,9 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
                     [frame_weak_ptr = frame->weak_ptr_.GetWeakPtr(), weak_ptr](
                         ICoreWebView2Frame* sender,
                         ICoreWebView2WebMessageReceivedEventArgs* args) {
-                      LPWSTR src_url = nullptr;
+                      wil::unique_cotaskmem_string src_url = nullptr;
                       args->get_Source(&src_url);
-                      LPWSTR json_args = nullptr;
+                      wil::unique_cotaskmem_string json_args = nullptr;
                       args->get_WebMessageAsJson(&json_args);
 
                       weak_ptr->parent->PostEvent(base::BindOnce(
@@ -543,7 +543,7 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
           [weak_ptr](ICoreWebView2* sender, IUnknown* args) {
             weak_ptr->parent->PostEvent(base::BindOnce(
                 [](base::WeakPtr<BrowserData> weak_ptr) {
-                  LPWSTR raw_favicon = nullptr;
+                  wil::unique_cotaskmem_string raw_favicon = nullptr;
                   weak_ptr->core_webview->get_FaviconUri(&raw_favicon);
                   weak_ptr->dispatcher->OnFaviconChanged(
                       WrapComString(raw_favicon));
@@ -578,7 +578,7 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
           [weak_ptr](ICoreWebView2* sender, IUnknown* args) {
             weak_ptr->parent->PostEvent(base::BindOnce(
                 [](base::WeakPtr<BrowserData> weak_ptr) {
-                  LPWSTR status_text = nullptr;
+                  wil::unique_cotaskmem_string status_text = nullptr;
                   weak_ptr->core_webview->get_StatusBarText(&status_text);
 
                   weak_ptr->dispatcher->OnStatusTextChanged(
@@ -614,9 +614,9 @@ void BindEventForUpdate(scoped_refptr<BrowserData> browser_wrapper) {
                 &event_args);
 
             // Serialize json
-            LPWSTR raw_json = nullptr;
+            wil::unique_cotaskmem_string raw_json = nullptr;
             event_args->get_ParameterObjectAsJson(&raw_json);
-            json json_obj = json::parse(Utf8Conv::Utf16ToUtf8(raw_json));
+            json json_obj = json::parse(Utf8Conv::Utf16ToUtf8(raw_json.get()));
 
             // Common arguments
             if (json_obj.find("responseStatusCode") != json_obj.end() ||
@@ -660,9 +660,9 @@ void BindEventForUpdate(scoped_refptr<BrowserData> browser_wrapper) {
                 &event_args);
 
             // Serialize json
-            LPWSTR raw_json = nullptr;
+            wil::unique_cotaskmem_string raw_json = nullptr;
             event_args->get_ParameterObjectAsJson(&raw_json);
-            json json_obj = json::parse(Utf8Conv::Utf16ToUtf8(raw_json));
+            json json_obj = json::parse(Utf8Conv::Utf16ToUtf8(raw_json.get()));
 
             weak_ptr->parent->PostEvent(base::BindOnce(
                 [](scoped_refptr<BrowserEventDispatcher> dispatcher,
@@ -703,9 +703,9 @@ void BindEventForUpdate(scoped_refptr<BrowserData> browser_wrapper) {
                 &event_args);
 
             // Serialize json
-            LPWSTR raw_json = nullptr;
+            wil::unique_cotaskmem_string raw_json = nullptr;
             event_args->get_ParameterObjectAsJson(&raw_json);
-            json json_obj = json::parse(Utf8Conv::Utf16ToUtf8(raw_json));
+            json json_obj = json::parse(Utf8Conv::Utf16ToUtf8(raw_json.get()));
 
             weak_ptr->parent->PostEvent(base::BindOnce(
                 [](scoped_refptr<BrowserEventDispatcher> dispatcher,
@@ -1000,7 +1000,7 @@ LPCSTR WINAPI GetSourceURL(BrowserData* obj) {
   obj->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<BrowserData> self, scoped_refptr<Semaphore> sync,
          LPSTR* cpp_url) {
-        LPWSTR url = nullptr;
+        wil::unique_cotaskmem_string url = nullptr;
         self->core_webview->get_Source(&url);
         *cpp_url = WrapComString(url);
 
@@ -1018,7 +1018,7 @@ LPCSTR WINAPI GetDocumentTitle(BrowserData* obj) {
   obj->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<BrowserData> self, scoped_refptr<Semaphore> sync,
          LPSTR* cpp_url) {
-        LPWSTR url = nullptr;
+        wil::unique_cotaskmem_string url = nullptr;
         self->core_webview->get_DocumentTitle(&url);
         *cpp_url = WrapComString(url);
 
@@ -1372,13 +1372,13 @@ LPCSTR WINAPI GetUserAgent(BrowserData* obj) {
   obj->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<BrowserData> self, scoped_refptr<Semaphore> sync,
          LPSTR* cpp_url) {
-        LPWSTR url = nullptr;
+        wil::unique_cotaskmem_string url = nullptr;
         WRL::ComPtr<ICoreWebView2Settings> settings = nullptr;
         WRL::ComPtr<ICoreWebView2Settings7> target_settings = nullptr;
         self->core_webview->get_Settings(&settings);
         settings->QueryInterface<ICoreWebView2Settings7>(&target_settings);
 
-        LPWSTR raw_ua = nullptr;
+        wil::unique_cotaskmem_string raw_ua = nullptr;
         target_settings->get_UserAgent(&raw_ua);
 
         *cpp_url = WrapComString(raw_ua);
@@ -1537,6 +1537,15 @@ void WINAPI ExecuteScriptCDPAsync(BrowserData* obj, LPCSTR script,
 
                     callback(ro, sizeof(RemoteObject), param);
 
+                    FreeComString(ro->type);
+                    FreeComString(ro->subtype);
+                    FreeComString(ro->class_name);
+                    FreeComString(ro->raw_value);
+                    FreeComString(ro->unserializable_value);
+                    FreeComString(ro->description);
+                    FreeComString(ro->raw_deepSerializedValue);
+                    FreeComString(ro->objectID);
+
                     edgeview_MemFree(ro);
                   },
                   std::move(retval), callback, param));
@@ -1647,14 +1656,14 @@ void WINAPI SetCDPEventReceiver(BrowserData* obj, LPCSTR event_name,
                       ICoreWebView2DevToolsProtocolEventReceivedEventArgs2>(
                       &args2);
 
-                  LPWSTR json_raw = nullptr;
+                  wil::unique_cotaskmem_string json_raw = nullptr;
                   args2->get_ParameterObjectAsJson(&json_raw);
 
-                  LPWSTR session = nullptr;
+                  wil::unique_cotaskmem_string session = nullptr;
                   args2->get_SessionId(&session);
 
-                  auto json_str = Utf8Conv::Utf16ToUtf8(json_raw);
-                  auto session_str = Utf8Conv::Utf16ToUtf8(session);
+                  auto json_str = Utf8Conv::Utf16ToUtf8(json_raw.get());
+                  auto session_str = Utf8Conv::Utf16ToUtf8(session.get());
                   callback(json_str.c_str(), session_str.c_str(), param);
 
                   return S_OK;
@@ -1724,7 +1733,7 @@ LPCSTR WINAPI GetProfileName(BrowserData* obj) {
         WRL::ComPtr<ICoreWebView2Profile> profile = nullptr;
         self->core_webview->get_Profile(&profile);
 
-        LPWSTR url = nullptr;
+        wil::unique_cotaskmem_string url = nullptr;
         profile->get_ProfileName(&url);
 
         *cpp_url = WrapComString(url);
@@ -1806,7 +1815,7 @@ LPCSTR WINAPI GetNewWindowURL(NewWindowDelegate* obj) {
   obj->browser->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<NewWindowDelegate> self, scoped_refptr<Semaphore> sync,
          LPSTR* cpp_url) {
-        LPWSTR url = nullptr;
+        wil::unique_cotaskmem_string url = nullptr;
         self->core_newwindow->get_Uri(&url);
         *cpp_url = WrapComString(url);
 

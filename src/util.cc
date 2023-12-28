@@ -25,6 +25,10 @@ LPSTR WrapComString(LPCSTR oriStr) {
   return pstr;
 }
 
+LPSTR WrapComString(const wil::unique_cotaskmem_string& str) {
+  return WrapComString(str.get());
+}
+
 LPBYTE WrapEStream(const std::string& mem) {
   LPBYTE ptr = (LPBYTE)edgeview_MemAlloc(mem.size() + 4);
 

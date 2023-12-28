@@ -254,7 +254,7 @@ EV_EXPORTS(CreateEnvironment, BOOL)(EnvCreateParams* params, DWORD* retObj) {
 }
 
 EV_EXPORTS(CheckRuntime, LPCSTR)(LPCSTR browser_path) {
-  LPWSTR available_version = nullptr;
+  wil::unique_cotaskmem_string available_version = nullptr;
   HRESULT hr = GetAvailableCoreWebView2BrowserVersionString(
       Utf8Conv::Utf8ToUtf16(browser_path).c_str(), &available_version);
 

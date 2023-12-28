@@ -21,7 +21,7 @@ using ResponseData = struct {
 };
 
 void TransferRequestJSON(const json& from, RequestData* to);
-void TransferRequestJSON(RequestData* from, json& ori);
+void FreeJSONRequest(RequestData* obj);
 
 extern DWORD fnCookieManagerTable[];
 extern DWORD fnResourceRequestCallbackTable[];
