@@ -51,8 +51,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,1
- PRODUCTVERSION 1,0,0,1
+ FILEVERSION 1,12,28,0
+ PRODUCTVERSION 1,12,28,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -69,12 +69,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Admenri Arts"
             VALUE "FileDescription", "EdgeView Control Library"
-            VALUE "FileVersion", "1.0.0.1"
+            VALUE "FileVersion", "1.12.28.0"
             VALUE "InternalName", "edgeview.dll"
             VALUE "LegalCopyright", "Copyright (C) 2023 Admenri. All rights reserved."
             VALUE "OriginalFilename", "edgeview.dll"
             VALUE "ProductName", "EdgeView Wrapper Proxy Library"
-            VALUE "ProductVersion", "1.0.0.1"
+            VALUE "ProductVersion", "1.12.28.0"
         END
     END
     BLOCK "VarFileInfo"

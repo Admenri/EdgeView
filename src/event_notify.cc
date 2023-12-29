@@ -622,6 +622,7 @@ void BrowserEventDispatcher::OnResourceReceiveResponse(json request_parameter) {
   FreeComString(resource_type);
 
   FreeComString(response->response_phrase);
+  FreeComString(response->response_headers);
 
   FreeJSONRequest(request.get());
 }
