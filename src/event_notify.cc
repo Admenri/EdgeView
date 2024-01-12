@@ -952,4 +952,33 @@ void BrowserEventDispatcher::OnStatusTextChanged(LPCSTR status) {
   }
 }
 
+void BrowserEventDispatcher::OnProcessFailed(
+    COREWEBVIEW2_PROCESS_FAILED_KIND kind) {
+  scoped_refptr<BrowserData> browser(self.get());
+  if (ecallback) {
+    LPVOID pClass = ecallback;
+    browser->AddRef();
+    IMP_NEWECLASS(TempBrowser, browser.get(), eClass::m_pVfTable_Browser,
+                  fnBrowserTable);
+    __asm {
+			push ecx;
+			push ebx;
+			push edi;
+			push esi;
+			mov ebx, pClass;
+			mov edx, [ebx];
+			lea ecx, pClass;
+			push kind;
+			push TempBrowser;
+			push ecx;
+			call[edx + 0x6C];
+			pop esi;
+			pop edi;
+			pop ebx;
+			pop ecx;
+    }
+    browser->Release();
+  }
+}
+
 }  // namespace edgeview

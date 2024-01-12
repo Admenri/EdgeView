@@ -62,6 +62,7 @@ class BrowserEventDispatcher : public base::RefCounted<BrowserEventDispatcher> {
   void OnFaviconChanged(LPCSTR favicon);
   void OnAudioStateChanged(BOOL audible);
   void OnStatusTextChanged(LPCSTR status);
+  void OnProcessFailed(COREWEBVIEW2_PROCESS_FAILED_KIND kind);
 
  private:
   base::WeakPtr<BrowserData> self;

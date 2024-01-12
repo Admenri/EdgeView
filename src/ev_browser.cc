@@ -169,7 +169,8 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
                   BOOL has_current = FALSE;
                   while (SUCCEEDED(iter->get_HasCurrentHeader(&has_current)) &&
                          has_current) {
-                    wil::unique_cotaskmem_string raw_key = nullptr, raw_value = nullptr;
+                    wil::unique_cotaskmem_string raw_key = nullptr,
+                                                 raw_value = nullptr;
                     iter->GetCurrentHeader(&raw_key, &raw_value);
 
                     headers.append(raw_key.get());
@@ -408,7 +409,8 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
             weak_ptr->parent->PostEvent(base::BindOnce(
                 [](base::WeakPtr<BrowserData> weak_ptr,
                    scoped_refptr<BasicAuthenticationCallback> callback) {
-                  wil::unique_cotaskmem_string url = nullptr, challenge = nullptr;
+                  wil::unique_cotaskmem_string url = nullptr,
+                                               challenge = nullptr;
                   callback->core_callback->get_Uri(&url);
                   callback->core_callback->get_Challenge(&challenge);
 
@@ -590,6 +592,28 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
           })
           .Get(),
       nullptr);
+
+  browser_wrapper->core_webview->add_ProcessFailed(
+      WRL::Callback<ICoreWebView2ProcessFailedEventHandler>(
+          [weak_ptr](ICoreWebView2* sender,
+                     ICoreWebView2ProcessFailedEventArgs* args) {
+            COREWEBVIEW2_PROCESS_FAILED_KIND kind;
+            args->get_ProcessFailedKind(&kind);
+
+            weak_ptr->parent->PostEvent(base::BindOnce(
+                [](base::WeakPtr<BrowserData> weak_ptr,
+                   COREWEBVIEW2_PROCESS_FAILED_KIND kind) {
+                  wil::unique_cotaskmem_string status_text = nullptr;
+                  weak_ptr->core_webview->get_StatusBarText(&status_text);
+
+                  weak_ptr->dispatcher->OnProcessFailed(kind);
+                },
+                weak_ptr, kind));
+
+            return S_OK;
+          })
+          .Get(),
+      nullptr);
 }
 
 void BindEventForUpdate(scoped_refptr<BrowserData> browser_wrapper) {
@@ -723,14 +747,17 @@ void BindEventForUpdate(scoped_refptr<BrowserData> browser_wrapper) {
 namespace {
 
 HWND WINAPI GetWindowHandle(BrowserData* obj) {
-  if (!obj->browser_window) return nullptr;
+  if (!obj->browser_window)
+    return nullptr;
 
   HWND wrapper_widget = obj->browser_window->GetHandle();
   HWND webview2_widget = ::GetWindow(wrapper_widget, GW_CHILD);
-  if (!webview2_widget) return wrapper_widget;
+  if (!webview2_widget)
+    return wrapper_widget;
 
   HWND chrome_widget = ::GetWindow(webview2_widget, GW_CHILD);
-  if (!chrome_widget) return webview2_widget;
+  if (!chrome_widget)
+    return webview2_widget;
 
   return chrome_widget;
 }
@@ -932,8 +959,10 @@ LPCSTR WINAPI ExecuteJavascript(BrowserData* obj, LPCSTR script) {
 }
 
 using ExecuteJavascriptCB = void(CALLBACK*)(LPCSTR json, LPVOID param);
-void WINAPI ExecuteJavascriptAsync(BrowserData* obj, LPCSTR script,
-                                   ExecuteJavascriptCB callback, LPVOID param) {
+void WINAPI ExecuteJavascriptAsync(BrowserData* obj,
+                                   LPCSTR script,
+                                   ExecuteJavascriptCB callback,
+                                   LPVOID param) {
   obj->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<BrowserData> self, std::string script,
          ExecuteJavascriptCB callback, LPVOID param) {
@@ -957,7 +986,8 @@ void WINAPI ExecuteJavascriptAsync(BrowserData* obj, LPCSTR script,
       scoped_refptr(obj), std::string(script), callback, param));
 }
 
-void WINAPI CaptureShotsnap(BrowserData* obj, LPBYTE* img_data,
+void WINAPI CaptureShotsnap(BrowserData* obj,
+                            LPBYTE* img_data,
                             int32_t* img_size) {
   obj->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<BrowserData> self, scoped_refptr<Semaphore> sync,
@@ -1082,8 +1112,10 @@ using PDFPrintSettingsData = struct {
   LPCSTR footer_url;
 };
 
-void WINAPI PrintToPDFStream(BrowserData* obj, PDFPrintSettingsData* settings,
-                             LPBYTE* img_data, int32_t* img_size) {
+void WINAPI PrintToPDFStream(BrowserData* obj,
+                             PDFPrintSettingsData* settings,
+                             LPBYTE* img_data,
+                             int32_t* img_size) {
   obj->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<BrowserData> self, scoped_refptr<Semaphore> sync,
          LPBYTE* img_data, int32_t* img_size, PDFPrintSettingsData* settings) {
@@ -1231,7 +1263,8 @@ void WINAPI SetFilechooserInfo(BrowserData* obj, LPCSTR files, int backend_id) {
   std::vector<std::string> path_list = SplitString(files, "\n");
   for (const auto& it : path_list) {
     auto obj = TrimString(it);
-    if (!obj.empty()) file_path.push_back(obj);
+    if (!obj.empty())
+      file_path.push_back(obj);
   }
 
   obj->parent->PostUITask(base::BindOnce(
@@ -1243,7 +1276,8 @@ void WINAPI SetFilechooserInfo(BrowserData* obj, LPCSTR files, int backend_id) {
       scoped_refptr(obj), std::move(args)));
 }
 
-void WINAPI SetVirtualHostMapping(BrowserData* obj, LPCSTR host,
+void WINAPI SetVirtualHostMapping(BrowserData* obj,
+                                  LPCSTR host,
                                   LPCSTR folder_path,
                                   COREWEBVIEW2_HOST_RESOURCE_ACCESS_KIND kind) {
   obj->parent->PostUITask(base::BindOnce(
@@ -1265,10 +1299,13 @@ void WINAPI ClearVirtualHostMapping(BrowserData* obj, LPCSTR host) {
       scoped_refptr(obj), std::string(host)));
 }
 
-uint32_t WINAPI GetFrameCount(BrowserData* obj) { return obj->frames.size(); }
+uint32_t WINAPI GetFrameCount(BrowserData* obj) {
+  return obj->frames.size();
+}
 
 void WINAPI GetFrameAt(BrowserData* obj, int idx, DWORD* retObj) {
-  if (idx < 0 || idx >= obj->frames.size()) return;
+  if (idx < 0 || idx >= obj->frames.size())
+    return;
 
   scoped_refptr<FrameData> frame = obj->frames[idx];
   if (retObj) {
@@ -1408,7 +1445,8 @@ void WINAPI SetUserAgent(BrowserData* obj, LPCSTR user_agent) {
 void WINAPI SetEmitTouchEvents(BrowserData* obj, BOOL enable, LPCSTR conf) {
   json args;
   args["enabled"] = json::boolean_t(enable);
-  if (conf) args["configuration"] = std::string(conf);
+  if (conf)
+    args["configuration"] = std::string(conf);
 
   obj->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<BrowserData> self, json args) {
@@ -1426,10 +1464,16 @@ using PageViewport = struct {
   float height;
   float scale;
 };
-void WINAPI SetDeviceMetricsOverride(BrowserData* obj, int width, int height,
-                                     double* device_factor, BOOL mobile,
-                                     double* scale, int screen_width,
-                                     int screen_height, int x, int y,
+void WINAPI SetDeviceMetricsOverride(BrowserData* obj,
+                                     int width,
+                                     int height,
+                                     double* device_factor,
+                                     BOOL mobile,
+                                     double* scale,
+                                     int screen_width,
+                                     int screen_height,
+                                     int x,
+                                     int y,
                                      PageViewport* vp) {
   json args;
   args["width"] = width;
@@ -1470,7 +1514,8 @@ void WINAPI ClearDeviceMetricsOverride(BrowserData* obj) {
       scoped_refptr(obj)));
 }
 
-void WINAPI ExecuteScriptCDP(BrowserData* obj, LPCSTR script,
+void WINAPI ExecuteScriptCDP(BrowserData* obj,
+                             LPCSTR script,
                              RemoteObject* ro) {
   json args;
   args["expression"] = script;
@@ -1504,9 +1549,11 @@ void WINAPI ExecuteScriptCDP(BrowserData* obj, LPCSTR script,
   obj->parent->SyncWaitIfNeed();
 }
 
-using ExecuteScriptCDPCallback = void(CALLBACK*)(LPVOID ptr, uint32_t size,
+using ExecuteScriptCDPCallback = void(CALLBACK*)(LPVOID ptr,
+                                                 uint32_t size,
                                                  LPVOID param);
-void WINAPI ExecuteScriptCDPAsync(BrowserData* obj, LPCSTR script,
+void WINAPI ExecuteScriptCDPAsync(BrowserData* obj,
+                                  LPCSTR script,
                                   BOOL await_promise,
                                   ExecuteScriptCDPCallback callback,
                                   LPVOID param) {
@@ -1560,7 +1607,9 @@ void WINAPI ExecuteScriptCDPAsync(BrowserData* obj, LPCSTR script,
       scoped_refptr(obj), std::move(args), callback, param));
 }
 
-LPCSTR WINAPI CallCDPMethod(BrowserData* obj, LPCSTR method, LPCSTR parameter,
+LPCSTR WINAPI CallCDPMethod(BrowserData* obj,
+                            LPCSTR method,
+                            LPCSTR parameter,
                             LPCSTR session) {
   LPCSTR ret_val = nullptr;
 
@@ -1598,9 +1647,12 @@ LPCSTR WINAPI CallCDPMethod(BrowserData* obj, LPCSTR method, LPCSTR parameter,
 }
 
 using CallCDPMethodCB = void(CALLBACK*)(LPCSTR json_ret, LPVOID param);
-void WINAPI CallCDPMethodAsync(BrowserData* obj, LPCSTR method,
-                               LPCSTR parameter, LPCSTR session,
-                               CallCDPMethodCB callback, LPVOID param) {
+void WINAPI CallCDPMethodAsync(BrowserData* obj,
+                               LPCSTR method,
+                               LPCSTR parameter,
+                               LPCSTR session,
+                               CallCDPMethodCB callback,
+                               LPVOID param) {
   obj->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<BrowserData> obj, std::string method,
          std::string parameter, std::string session, CallCDPMethodCB callback,
@@ -1631,10 +1683,13 @@ void WINAPI CallCDPMethodAsync(BrowserData* obj, LPCSTR method,
       session ? std::string(session) : std::string(), callback, param));
 }
 
-using CDPEventReceivedCB = void(CALLBACK*)(LPCSTR json_ret, LPCSTR session,
+using CDPEventReceivedCB = void(CALLBACK*)(LPCSTR json_ret,
+                                           LPCSTR session,
                                            LPVOID param);
-void WINAPI SetCDPEventReceiver(BrowserData* obj, LPCSTR event_name,
-                                CDPEventReceivedCB callback, LPVOID param) {
+void WINAPI SetCDPEventReceiver(BrowserData* obj,
+                                LPCSTR event_name,
+                                CDPEventReceivedCB callback,
+                                LPVOID param) {
   obj->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<BrowserData> obj, std::string event_name,
          CDPEventReceivedCB callback, LPVOID param) {
