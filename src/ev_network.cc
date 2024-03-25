@@ -7,7 +7,8 @@ namespace edgeview {
 
 namespace {
 
-void ExtractKeyValue(const std::string& str, std::string& key,
+void ExtractKeyValue(const std::string& str,
+                     std::string& key,
                      std::string& value) {
   size_t delimiterPos = str.find(':');
 
@@ -144,10 +145,60 @@ void WINAPI DeleteCookie(CookieManagerData* obj, LPCSTR name, LPCSTR url) {
   obj->browser->parent->SyncWaitIfNeed();
 }
 
+using GetCookieAsyncCallback = void(CALLBACK*)(LPCSTR cookie_json,
+                                               LPVOID param);
+void WINAPI GetCookiesAsync(CookieManagerData* obj,
+                            LPCSTR url,
+                            GetCookieAsyncCallback callback,
+                            LPVOID param) {
+  obj->browser->parent->PostUITask(base::BindOnce(
+      [](scoped_refptr<CookieManagerData> obj, LPCSTR url,
+         GetCookieAsyncCallback callback, LPVOID param) {
+        obj->core_manager->GetCookies(
+            Utf8Conv::Utf8ToUtf16(url).c_str(),
+            WRL::Callback<ICoreWebView2GetCookiesCompletedHandler>(
+                [callback, param](HRESULT result,
+                                  ICoreWebView2CookieList* cookieList) {
+                  json cookie_json;
+
+                  uint32_t cookie_size = 0;
+                  cookieList->get_Count(&cookie_size);
+                  for (uint32_t i = 0; i < cookie_size; ++i) {
+                    WRL::ComPtr<ICoreWebView2Cookie> cookie;
+                    cookieList->GetValueAtIndex(i, &cookie);
+
+                    wil::unique_cotaskmem_string value = nullptr;
+                    json item = json::array();
+
+                    cookie->get_Name(&value);
+                    item["name"] = Utf8Conv::Utf16ToUtf8(value.get());
+
+                    cookie->get_Value(&value);
+                    item["value"] = Utf8Conv::Utf16ToUtf8(value.get());
+
+                    cookie->get_Domain(&value);
+                    item["domain"] = Utf8Conv::Utf16ToUtf8(value.get());
+
+                    cookie->get_Path(&value);
+                    item["path"] = Utf8Conv::Utf16ToUtf8(value.get());
+
+                    cookie_json.push_back(std::move(item));
+                  }
+
+                  callback(cookie_json.dump().c_str(), param);
+
+                  return S_OK;
+                })
+                .Get());
+      },
+      scoped_refptr(obj), url, callback, param));
+}
+
 DWORD fnCookieManagerTable[] = {
     (DWORD)GetCookies,
     (DWORD)AddOrUpdateCookie,
     (DWORD)DeleteCookie,
+    (DWORD)GetCookiesAsync,
 };
 
 void TransferRequestJSON(const json& from, RequestData* to) {
@@ -227,7 +278,8 @@ void WINAPI FailedRequest(ResourceRequestCallback* obj, LPCSTR failed_reason) {
   continue_args["requestId"] = obj->event_parameter["requestId"];
 
   std::string reason(failed_reason);
-  if (reason.empty()) reason = "Failed";
+  if (reason.empty())
+    reason = "Failed";
   continue_args["errorReason"] = reason;
 
   obj->browser->parent->PostUITask(base::BindOnce(
@@ -239,8 +291,10 @@ void WINAPI FailedRequest(ResourceRequestCallback* obj, LPCSTR failed_reason) {
       scoped_refptr(obj), std::move(continue_args)));
 }
 
-void WINAPI FulfillRequest(ResourceRequestCallback* obj, ResponseData* response,
-                           LPBYTE data, uint32_t size) {
+void WINAPI FulfillRequest(ResourceRequestCallback* obj,
+                           ResponseData* response,
+                           LPBYTE data,
+                           uint32_t size) {
   json continue_args;
   continue_args["requestId"] = obj->event_parameter["requestId"];
   if (response) {
@@ -326,7 +380,8 @@ void WINAPI ContinueResponse(ResourceResponseCallback* obj,
       scoped_refptr(obj), std::move(continue_args)));
 }
 
-using ReceivedResponseCallback = void(CALLBACK*)(LPVOID ptr, uint32_t size,
+using ReceivedResponseCallback = void(CALLBACK*)(LPVOID ptr,
+                                                 uint32_t size,
                                                  LPVOID param);
 void WINAPI GetResponseBodyData(ResourceResponseCallback* obj,
                                 ReceivedResponseCallback callback,
@@ -368,7 +423,8 @@ void WINAPI GetResponseBodyData(ResourceResponseCallback* obj,
 
                         callback(lpMem, body.size(), param);
 
-                        if (lpMem) edgeview_MemFree(lpMem);
+                        if (lpMem)
+                          edgeview_MemFree(lpMem);
                       },
                       std::move(ret_args), callback, param));
 
@@ -380,7 +436,8 @@ void WINAPI GetResponseBodyData(ResourceResponseCallback* obj,
 }
 
 void WINAPI GetResponseBodyDataSync(ResourceResponseCallback* obj,
-                                    LPVOID* data_ptr, int32_t* data_size) {
+                                    LPVOID* data_ptr,
+                                    int32_t* data_size) {
   json continue_args;
   continue_args["requestId"] = obj->event_parameter["requestId"];
 
@@ -428,7 +485,8 @@ void WINAPI GetResponseBodyDataSync(ResourceResponseCallback* obj,
 }
 
 void WINAPI FulfillResponse(ResourceResponseCallback* obj,
-                            ResponseData* response, LPBYTE data,
+                            ResponseData* response,
+                            LPBYTE data,
                             uint32_t size) {
   json continue_args;
   continue_args["requestId"] = obj->event_parameter["requestId"];
@@ -478,7 +536,8 @@ DWORD fnResourceResponseCallbackTable[] = {
     (DWORD)GetResponseBodyDataSync,
 };
 
-void WINAPI SetAuthInfo(BasicAuthenticationCallback* obj, LPCSTR username,
+void WINAPI SetAuthInfo(BasicAuthenticationCallback* obj,
+                        LPCSTR username,
                         LPCSTR password) {
   obj->browser->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<BasicAuthenticationCallback> obj, std::string uname,

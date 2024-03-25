@@ -1199,13 +1199,28 @@ void WINAPI CloseController(BrowserData* obj) {
       scoped_refptr(obj)));
 }
 
-void WINAPI AddHookScript(BrowserData* obj, LPCSTR script) {
+LPCSTR WINAPI AddHookScript(BrowserData* obj, LPCSTR script) {
+  LPCSTR cpp_str = nullptr;
+
   obj->parent->PostUITask(base::BindOnce(
-      [](scoped_refptr<BrowserData> self, std::string script) {
+      [](scoped_refptr<BrowserData> self, scoped_refptr<Semaphore> sync,
+         std::string script, LPCSTR* cpp_str) {
         self->core_webview->AddScriptToExecuteOnDocumentCreated(
-            Utf8Conv::Utf8ToUtf16(script).c_str(), nullptr);
+            Utf8Conv::Utf8ToUtf16(script).c_str(),
+            WRL::Callback<
+                ICoreWebView2AddScriptToExecuteOnDocumentCreatedCompletedHandler>(
+                [sync, cpp_str](HRESULT errorCode, LPCWSTR id) {
+                  *cpp_str = WrapComString(id);
+                  sync->Notify();
+                  return S_OK;
+                })
+                .Get());
       },
-      scoped_refptr(obj), std::string(script)));
+      scoped_refptr(obj), obj->parent->semaphore(), std::string(script),
+      &cpp_str));
+  obj->parent->SyncWaitIfNeed();
+
+  return cpp_str;
 }
 
 void WINAPI OpenDefaultDownloadDialog(BrowserData* obj) {
@@ -1801,6 +1816,15 @@ LPCSTR WINAPI GetProfileName(BrowserData* obj) {
   return cpp_url;
 }
 
+void WINAPI RemoveHOOKScript(BrowserData* obj, LPCSTR id) {
+  obj->parent->PostUITask(base::BindOnce(
+      [](scoped_refptr<BrowserData> self, std::string str) {
+        self->core_webview->RemoveScriptToExecuteOnDocumentCreated(
+            Utf8Conv::Utf8ToUtf16(str).c_str());
+      },
+      scoped_refptr(obj), std::string(id)));
+}
+
 }  // namespace
 
 DWORD fnBrowserTable[] = {
@@ -1860,6 +1884,7 @@ DWORD fnBrowserTable[] = {
     (DWORD)SetFilechooserInterception,
     (DWORD)LoadBrowserExtension,
     (DWORD)GetProfileName,
+    (DWORD)RemoveHOOKScript,
 };  // namespace edgeview
 
 namespace {
