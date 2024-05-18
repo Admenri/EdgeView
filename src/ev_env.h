@@ -13,6 +13,7 @@ using EnvCreateParams = struct {
   LPCSTR pszUserDataPath;
   LPCSTR pszCommandLine;
   LPCSTR pszLanguage;
+  BOOL bEnableBrowserExtensions;
 };
 
 EV_EXPORTS(CreateEnvironment, BOOL)(EnvCreateParams* params, DWORD* retObj);

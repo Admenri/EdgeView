@@ -25,7 +25,7 @@ using CookieData = struct {
   LPCSTR value;
   LPCSTR domain;
   LPCSTR path;
-  double expires;
+  uint64_t expires;
   BOOL http_only;
   COREWEBVIEW2_COOKIE_SAME_SITE_KIND same_site;
   BOOL is_secure;
@@ -45,7 +45,10 @@ static void TransferCookie(WRL::ComPtr<ICoreWebView2Cookie> from,
   from->get_Path(&value);
   to->path = WrapComString(value);
 
-  from->get_Expires(&to->expires);
+  double exp;
+  from->get_Expires(&exp);
+  to->expires = exp;
+
   from->get_IsHttpOnly(&to->http_only);
   from->get_SameSite(&to->same_site);
   from->get_IsSecure(&to->is_secure);
@@ -119,8 +122,10 @@ void WINAPI AddOrUpdateCookie(CookieManagerData* obj, CookieData* data) {
             Utf8Conv::Utf8ToUtf16(data->value).c_str(),
             Utf8Conv::Utf8ToUtf16(data->domain).c_str(),
             Utf8Conv::Utf8ToUtf16(data->path).c_str(), &cookie);
-        TransferCookie(data, cookie);
-        self->core_manager->AddOrUpdateCookie(cookie.Get());
+        if (cookie) {
+          TransferCookie(data, cookie);
+          self->core_manager->AddOrUpdateCookie(cookie.Get());
+        }
 
         sync->Notify();
       },

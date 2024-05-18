@@ -1275,7 +1275,7 @@ void WINAPI SetFilechooserInfo(BrowserData* obj, LPCSTR files, int backend_id) {
   args["backendNodeId"] = backend_id;
 
   json file_path = json::array();
-  std::vector<std::string> path_list = SplitString(files, "\n");
+  std::vector<std::string> path_list = SplitString(files, "|");
   for (const auto& it : path_list) {
     auto obj = TrimString(it);
     if (!obj.empty())
@@ -1777,7 +1777,8 @@ void WINAPI LoadBrowserExtension(BrowserData* obj, LPCSTR path, DWORD* retObj) {
                 ICoreWebView2ProfileAddBrowserExtensionCompletedHandler>(
                 [data, semaphore](HRESULT errorCode,
                                   ICoreWebView2BrowserExtension* extension) {
-                  data->core_extension = extension;
+                  if (SUCCEEDED(errorCode))
+                    data->core_extension = extension;
 
                   semaphore->Notify();
                   return S_OK;
@@ -1787,7 +1788,7 @@ void WINAPI LoadBrowserExtension(BrowserData* obj, LPCSTR path, DWORD* retObj) {
       scoped_refptr(obj), obj->parent->semaphore(), std::string(path), data));
   obj->parent->SyncWaitIfNeed();
 
-  if (retObj) {
+  if (retObj && data->core_extension.Get()) {
     data->AddRef();
     retObj[1] = (DWORD)data.get();
     retObj[2] = (DWORD)fnExtensionDataTable;

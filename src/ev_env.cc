@@ -17,8 +17,10 @@ using BrowserCreateParams = struct {
   LPCSTR pszProfileName;
 };
 
-void WINAPI CreateBrowser(EnvironmentData* obj, BrowserCreateParams* params,
-                          LPVOID lpCallback, DWORD* retObj) {
+void WINAPI CreateBrowser(EnvironmentData* obj,
+                          BrowserCreateParams* params,
+                          LPVOID lpCallback,
+                          DWORD* retObj) {
   scoped_refptr<BrowserData> browser_wrapper = new BrowserData();
 
   auto task = base::BindOnce(
@@ -92,7 +94,8 @@ void WINAPI CreateBrowser(EnvironmentData* obj, BrowserCreateParams* params,
 
 void WINAPI CreateCompositionBrowser(EnvironmentData* obj,
                                      BrowserCreateParams* params,
-                                     LPVOID lpCallback, DWORD* retObj) {
+                                     LPVOID lpCallback,
+                                     DWORD* retObj) {
   scoped_refptr<BrowserData> browser_wrapper = new BrowserData();
 
   auto task = base::BindOnce(
@@ -225,6 +228,7 @@ EV_EXPORTS(CreateEnvironment, BOOL)(EnvCreateParams* params, DWORD* retObj) {
 
   // Avoid send report to microsoft server
   options->put_IsCustomCrashReportingEnabled(true);
+  options->put_AreBrowserExtensionsEnabled(params->bEnableBrowserExtensions);
 
   scoped_refptr<edgeview::EnvironmentData> shared_data =
       new edgeview::EnvironmentData();
@@ -258,7 +262,8 @@ EV_EXPORTS(CheckRuntime, LPCSTR)(LPCSTR browser_path) {
   HRESULT hr = GetAvailableCoreWebView2BrowserVersionString(
       Utf8Conv::Utf8ToUtf16(browser_path).c_str(), &available_version);
 
-  if (!available_version || !SUCCEEDED(hr)) return nullptr;
+  if (!available_version || !SUCCEEDED(hr))
+    return nullptr;
 
   return edgeview::WrapComString(available_version);
 }
