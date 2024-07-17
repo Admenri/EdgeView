@@ -1282,6 +1282,8 @@ void WINAPI SetFilechooserInfo(BrowserData* obj, LPCSTR files, int backend_id) {
       file_path.push_back(obj);
   }
 
+  args["files"] = file_path;
+
   obj->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<BrowserData> self, json args) {
         self->core_webview->CallDevToolsProtocolMethod(
