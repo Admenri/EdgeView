@@ -1659,6 +1659,7 @@ LPCSTR WINAPI CallCDPMethod(BrowserData* obj,
       scoped_refptr(obj), obj->parent->semaphore(), std::string(method),
       std::string(parameter), session ? std::string(session) : std::string(),
       &ret_val));
+  obj->parent->SyncWaitIfNeed();
 
   return ret_val;
 }
