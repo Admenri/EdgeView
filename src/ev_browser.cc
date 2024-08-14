@@ -1760,16 +1760,18 @@ void WINAPI SetFilechooserInterception(BrowserData* obj, BOOL enable) {
       scoped_refptr(obj), enable));
 }
 
-void WINAPI LoadBrowserExtension(BrowserData* obj, LPCSTR path, DWORD* retObj) {
-  scoped_refptr<ExtensionData> data = new ExtensionData();
-
+using LoadBrowserExtensionCB = void(CALLBACK*)(LPCSTR extension_name,
+                                               LPCSTR extension_id,
+                                               LPVOID param);
+void WINAPI LoadBrowserExtension(BrowserData* obj,
+                                 LPCSTR path,
+                                 LoadBrowserExtensionCB callback,
+                                 LPVOID param) {
   obj->parent->PostUITask(base::BindOnce(
-      [](scoped_refptr<BrowserData> self, scoped_refptr<Semaphore> semaphore,
-         std::string path, scoped_refptr<ExtensionData> data) {
+      [](scoped_refptr<BrowserData> self, std::string path,
+         LoadBrowserExtensionCB callback, LPVOID param) {
         WRL::ComPtr<ICoreWebView2Profile> profile = nullptr;
         self->core_webview->get_Profile(&profile);
-
-        data->parent = self->parent;
 
         WRL::ComPtr<ICoreWebView2Profile8> profile_ptr = nullptr;
         profile->QueryInterface<ICoreWebView2Profile8>(&profile_ptr);
@@ -1778,24 +1780,21 @@ void WINAPI LoadBrowserExtension(BrowserData* obj, LPCSTR path, DWORD* retObj) {
             Utf8Conv::Utf8ToUtf16(path).c_str(),
             WRL::Callback<
                 ICoreWebView2ProfileAddBrowserExtensionCompletedHandler>(
-                [data, semaphore](HRESULT errorCode,
+                [callback, param](HRESULT errorCode,
                                   ICoreWebView2BrowserExtension* extension) {
-                  if (SUCCEEDED(errorCode))
-                    data->core_extension = extension;
+                  if (callback) {
+                    wil::unique_cotaskmem_string ename = nullptr, eid = nullptr;
+                    extension->get_Name(&ename);
+                    extension->get_Id(&eid);
+                    callback(Utf8Conv::Utf16ToUtf8(ename.get()).c_str(),
+                             Utf8Conv::Utf16ToUtf8(eid.get()).c_str(), param);
+                  }
 
-                  semaphore->Notify();
                   return S_OK;
                 })
                 .Get());
       },
-      scoped_refptr(obj), obj->parent->semaphore(), std::string(path), data));
-  obj->parent->SyncWaitIfNeed();
-
-  if (retObj && data->core_extension.Get()) {
-    data->AddRef();
-    retObj[1] = (DWORD)data.get();
-    retObj[2] = (DWORD)fnExtensionDataTable;
-  }
+      scoped_refptr(obj), std::string(path), callback, param));
 }
 
 LPCSTR WINAPI GetProfileName(BrowserData* obj) {

@@ -18,7 +18,7 @@ static void ExecuteScriptAsync(scoped_refptr<BrowserData> browser,
 
 static json ExecuteScriptSync(scoped_refptr<BrowserData> browser,
                               const std::string& script) {
-  json ret_obj;
+  json ret_obj = json::object();
 
   // Force async task post
   browser->parent->PostEvent(base::BindOnce(
@@ -45,7 +45,8 @@ static json ExecuteScriptSync(scoped_refptr<BrowserData> browser,
 }
 
 static void CallCDPMethodAsync(scoped_refptr<BrowserData> browser,
-                               const std::string& method, const json& args) {
+                               const std::string& method,
+                               const json& args) {
   // Force async task post
   browser->parent->PostEvent(base::BindOnce(
       [](scoped_refptr<BrowserData> obj, const std::string& method,
@@ -58,7 +59,8 @@ static void CallCDPMethodAsync(scoped_refptr<BrowserData> browser,
 }
 
 static json CallCDPMethodSync(scoped_refptr<BrowserData> browser,
-                              const std::string& method, const json& args) {
+                              const std::string& method,
+                              const json& args) {
   json ret_obj;
 
   // Force async task post
@@ -97,7 +99,9 @@ void WINAPI Element_Click(DOMOperation* obj, LPCSTR selector, int index) {
                   std::string(selector), index));
 }
 
-void WINAPI Element_CustomEvent(DOMOperation* obj, LPCSTR selector, int index,
+void WINAPI Element_CustomEvent(DOMOperation* obj,
+                                LPCSTR selector,
+                                int index,
                                 LPCSTR event_name) {
   ExecuteScriptAsync(
       obj->browser.get(),
@@ -107,7 +111,8 @@ void WINAPI Element_CustomEvent(DOMOperation* obj, LPCSTR selector, int index,
           std::string(selector), index, std::string(event_name)));
 }
 
-LPCSTR WINAPI Element_Get_InnerText(DOMOperation* obj, LPCSTR selector,
+LPCSTR WINAPI Element_Get_InnerText(DOMOperation* obj,
+                                    LPCSTR selector,
                                     int index) {
   auto ret = ExecuteScriptSync(
       obj->browser.get(),
@@ -115,12 +120,15 @@ LPCSTR WINAPI Element_Get_InnerText(DOMOperation* obj, LPCSTR selector,
                   std::string(selector), index));
 
   std::string ret_val;
-  ret.get_to(ret_val);
+  if (ret.type() == json::value_t::string)
+    ret.get_to(ret_val);
 
   return WrapComString(ret_val.c_str());
 }
 
-void WINAPI Element_Put_InnerText(DOMOperation* obj, LPCSTR selector, int index,
+void WINAPI Element_Put_InnerText(DOMOperation* obj,
+                                  LPCSTR selector,
+                                  int index,
                                   LPCSTR text) {
   ExecuteScriptAsync(
       obj->browser.get(),
@@ -128,7 +136,8 @@ void WINAPI Element_Put_InnerText(DOMOperation* obj, LPCSTR selector, int index,
                   std::string(selector), index, std::string(text)));
 }
 
-LPCSTR WINAPI Element_Get_InnerHTML(DOMOperation* obj, LPCSTR selector,
+LPCSTR WINAPI Element_Get_InnerHTML(DOMOperation* obj,
+                                    LPCSTR selector,
                                     int index) {
   auto ret = ExecuteScriptSync(
       obj->browser.get(),
@@ -136,12 +145,15 @@ LPCSTR WINAPI Element_Get_InnerHTML(DOMOperation* obj, LPCSTR selector,
                   std::string(selector), index));
 
   std::string ret_val;
-  ret.get_to(ret_val);
+  if (ret.type() == json::value_t::string)
+    ret.get_to(ret_val);
 
   return WrapComString(ret_val.c_str());
 }
 
-void WINAPI Element_Put_InnerHTML(DOMOperation* obj, LPCSTR selector, int index,
+void WINAPI Element_Put_InnerHTML(DOMOperation* obj,
+                                  LPCSTR selector,
+                                  int index,
                                   LPCSTR text) {
   ExecuteScriptAsync(
       obj->browser.get(),
@@ -160,8 +172,10 @@ int WINAPI Element_QuerySelector(DOMOperation* obj, int node, LPCSTR selector) {
   return ret["nodeId"].template get<int>();
 }
 
-void WINAPI Element_QuerySelectorAll(DOMOperation* obj, int node,
-                                     LPCSTR selector, LPVOID* mem,
+void WINAPI Element_QuerySelectorAll(DOMOperation* obj,
+                                     int node,
+                                     LPCSTR selector,
+                                     LPVOID* mem,
                                      uint32_t* size) {
   json args;
   args["nodeId"] = node;
@@ -186,7 +200,8 @@ int WINAPI Element_GetDocument(DOMOperation* obj) {
   return ret["root"]["nodeId"].template get<int>();
 }
 
-LPCSTR WINAPI Element_Get_OuterText(DOMOperation* obj, LPCSTR selector,
+LPCSTR WINAPI Element_Get_OuterText(DOMOperation* obj,
+                                    LPCSTR selector,
                                     int index) {
   auto ret = ExecuteScriptSync(
       obj->browser.get(),
@@ -194,12 +209,14 @@ LPCSTR WINAPI Element_Get_OuterText(DOMOperation* obj, LPCSTR selector,
                   std::string(selector), index));
 
   std::string ret_val;
-  ret.get_to(ret_val);
+  if (ret.type() == json::value_t::string)
+    ret.get_to(ret_val);
 
   return WrapComString(ret_val.c_str());
 }
 
-LPCSTR WINAPI Element_Get_OuterHTML(DOMOperation* obj, LPCSTR selector,
+LPCSTR WINAPI Element_Get_OuterHTML(DOMOperation* obj,
+                                    LPCSTR selector,
                                     int index) {
   auto ret = ExecuteScriptSync(
       obj->browser.get(),
@@ -207,7 +224,8 @@ LPCSTR WINAPI Element_Get_OuterHTML(DOMOperation* obj, LPCSTR selector,
                   std::string(selector), index));
 
   std::string ret_val;
-  ret.get_to(ret_val);
+  if (ret.type() == json::value_t::string)
+    ret.get_to(ret_val);
 
   return WrapComString(ret_val.c_str());
 }
@@ -219,12 +237,15 @@ LPCSTR WINAPI Element_Get_Value(DOMOperation* obj, LPCSTR selector, int index) {
                   std::string(selector), index));
 
   std::string ret_val;
-  ret.get_to(ret_val);
+  if (ret.type() == json::value_t::string)
+    ret.get_to(ret_val);
 
   return WrapComString(ret_val.c_str());
 }
 
-void WINAPI Element_Put_Value(DOMOperation* obj, LPCSTR selector, int index,
+void WINAPI Element_Put_Value(DOMOperation* obj,
+                              LPCSTR selector,
+                              int index,
                               LPCSTR text) {
   ExecuteScriptAsync(
       obj->browser.get(),
@@ -232,21 +253,27 @@ void WINAPI Element_Put_Value(DOMOperation* obj, LPCSTR selector, int index,
                   std::string(selector), index, std::string(text)));
 }
 
-LPCSTR WINAPI Element_Get_Attribute(DOMOperation* obj, LPCSTR selector,
-                                    int index, LPCSTR attr) {
+LPCSTR WINAPI Element_Get_Attribute(DOMOperation* obj,
+                                    LPCSTR selector,
+                                    int index,
+                                    LPCSTR attr) {
   auto ret = ExecuteScriptSync(
       obj->browser.get(),
       std::format("document.querySelectorAll(\"{}\")[{}].getAttribute(\"{}\")",
                   std::string(selector), index, std::string(attr)));
 
   std::string ret_val;
-  ret.get_to(ret_val);
+  if (ret.type() == json::value_t::string)
+    ret.get_to(ret_val);
 
   return WrapComString(ret_val.c_str());
 }
 
-void WINAPI Element_Put_Attribute(DOMOperation* obj, LPCSTR selector, int index,
-                                  LPCSTR attr, LPCSTR text) {
+void WINAPI Element_Put_Attribute(DOMOperation* obj,
+                                  LPCSTR selector,
+                                  int index,
+                                  LPCSTR attr,
+                                  LPCSTR text) {
   ExecuteScriptAsync(obj->browser.get(),
                      std::format("document.querySelectorAll(\"{}\")[{}]."
                                  "setAttribute(\"{}\", \"{}\"); ",
@@ -261,12 +288,15 @@ BOOL WINAPI Element_Get_Checked(DOMOperation* obj, LPCSTR selector, int index) {
                   std::string(selector), index));
 
   bool ret_val = false;
-  ret.get_to(ret_val);
+  if (ret.type() == json::value_t::boolean)
+    ret.get_to(ret_val);
 
   return ret_val;
 }
 
-void WINAPI Element_Put_Checked(DOMOperation* obj, LPCSTR selector, int index,
+void WINAPI Element_Put_Checked(DOMOperation* obj,
+                                LPCSTR selector,
+                                int index,
                                 BOOL checked) {
   ExecuteScriptAsync(
       obj->browser.get(),
@@ -275,8 +305,10 @@ void WINAPI Element_Put_Checked(DOMOperation* obj, LPCSTR selector, int index,
                   checked ? std::string("true") : std::string("false")));
 }
 
-void WINAPI Element_Remove_Attribute(DOMOperation* obj, LPCSTR selector,
-                                     int index, LPCSTR attr) {
+void WINAPI Element_Remove_Attribute(DOMOperation* obj,
+                                     LPCSTR selector,
+                                     int index,
+                                     LPCSTR attr) {
   ExecuteScriptAsync(
       obj->browser.get(),
       std::format(
@@ -284,31 +316,43 @@ void WINAPI Element_Remove_Attribute(DOMOperation* obj, LPCSTR selector,
           std::string(selector), index, std::string(attr)));
 }
 
-void WINAPI Element_SetScrollPos(DOMOperation* obj, LPCSTR selector, int index,
-                                 int delx, int dely) {
+void WINAPI Element_SetScrollPos(DOMOperation* obj,
+                                 LPCSTR selector,
+                                 int index,
+                                 int delx,
+                                 int dely) {
   ExecuteScriptAsync(
       obj->browser.get(),
       std::format("document.querySelectorAll(\"{}\")[{}].scrollTo({}, {});",
                   std::string(selector), index, delx, dely));
 }
 
-void WINAPI Element_GetCanvasData(DOMOperation* obj, LPCSTR selector, int index,
-                                  LPVOID* ptr, uint32_t* size) {
+void WINAPI Element_GetCanvasData(DOMOperation* obj,
+                                  LPCSTR selector,
+                                  int index,
+                                  LPVOID* ptr,
+                                  uint32_t* size) {
   auto ret = ExecuteScriptSync(
       obj->browser.get(),
       std::format(
           "document.querySelectorAll(\"{}\")[{}].toDataURL('image/png')",
           std::string(selector), index));
 
-  auto b64_str = ret.template get<std::string>();
-  auto raw_data = modp_b64_decode(b64_str);
+  if (ret.type() == json::value_t::string) {
+    auto b64_str = ret.template get<std::string>();
+    auto b64_data = b64_str.substr(b64_str.find(',') + 1, b64_str.size());
 
-  *ptr = edgeview_MemAlloc(raw_data.size());
-  memcpy(*ptr, raw_data.data(), raw_data.size());
-  *size = raw_data.size();
+    auto raw_data = modp_b64_decode(b64_data);
+
+    *ptr = edgeview_MemAlloc(raw_data.size());
+    memcpy(*ptr, raw_data.data(), raw_data.size());
+    *size = raw_data.size();
+  }
 }
 
-void WINAPI Element_SetFocusState(DOMOperation* obj, LPCSTR selector, int index,
+void WINAPI Element_SetFocusState(DOMOperation* obj,
+                                  LPCSTR selector,
+                                  int index,
                                   BOOL focus) {
   ExecuteScriptAsync(
       obj->browser.get(),
