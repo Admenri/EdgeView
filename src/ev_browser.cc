@@ -1258,7 +1258,8 @@ void WINAPI SetRequestInterception(BrowserData* obj, BOOL enable) {
 
 void WINAPI PostWebMessage(BrowserData* obj, LPCSTR arg, BOOL as_json) {
   obj->parent->PostUITask(base::BindOnce(
-      [](scoped_refptr<BrowserData> self, std::string arg, BOOL as_json) {
+      [](scoped_refptr<BrowserData> self, scoped_refptr<Semaphore> sync,
+         std::string arg, BOOL as_json) {
         if (as_json) {
           self->core_webview->PostWebMessageAsJson(
               Utf8Conv::Utf8ToUtf16(arg).c_str());
@@ -1267,7 +1268,8 @@ void WINAPI PostWebMessage(BrowserData* obj, LPCSTR arg, BOOL as_json) {
               Utf8Conv::Utf8ToUtf16(arg).c_str());
         }
       },
-      scoped_refptr(obj), std::string(arg), as_json));
+      scoped_refptr(obj), obj->parent->semaphore(), std::string(arg), as_json));
+  obj->parent->SyncWaitIfNeed();
 }
 
 void WINAPI SetFilechooserInfo(BrowserData* obj, LPCSTR files, int backend_id) {

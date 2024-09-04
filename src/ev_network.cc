@@ -329,7 +329,7 @@ void WINAPI FulfillRequest(ResourceRequestCallback* obj,
 
   std::string mem;
   mem.assign(size, 0);
-  memcpy(&mem.front(), mem.data(), size);
+  memcpy(&mem.front(), data, size);
   continue_args["body"] = modp_b64_encode(mem);
 
   obj->browser->parent->PostUITask(base::BindOnce(
