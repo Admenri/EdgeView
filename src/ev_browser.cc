@@ -1267,6 +1267,8 @@ void WINAPI PostWebMessage(BrowserData* obj, LPCSTR arg, BOOL as_json) {
           self->core_webview->PostWebMessageAsString(
               Utf8Conv::Utf8ToUtf16(arg).c_str());
         }
+
+        sync->Notify();
       },
       scoped_refptr(obj), obj->parent->semaphore(), std::string(arg), as_json));
   obj->parent->SyncWaitIfNeed();
