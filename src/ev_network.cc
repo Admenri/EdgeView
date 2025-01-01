@@ -248,9 +248,12 @@ void WINAPI ContinueRequest(ResourceRequestCallback* obj,
   continue_args["interceptResponse"] = true;
 
   if (request) {
-    continue_args["url"] = request->url;
-    continue_args["method"] = request->method;
-    continue_args["postData"] = request->post_data;
+    if (request->url && *request->url)
+      continue_args["url"] = request->url;
+    if (request->method && *request->method)
+      continue_args["method"] = request->method;
+    if (request->post_data && *request->post_data)
+      continue_args["postData"] = request->post_data;
 
     std::string headers_raw = request->headers;
     json header_arr = json::array();
@@ -262,7 +265,7 @@ void WINAPI ContinueRequest(ResourceRequestCallback* obj,
       value = TrimString(value);
 
       json item = json::object();
-      item["key"] = key;
+      item["name"] = key;
       item["value"] = value;
       header_arr.push_back(std::move(item));
     }
@@ -304,27 +307,29 @@ void WINAPI FulfillRequest(ResourceRequestCallback* obj,
   continue_args["requestId"] = obj->event_parameter["requestId"];
   if (response) {
     continue_args["responseCode"] = response->response_code;
-    continue_args["responsePhrase"] = response->response_phrase;
+    if (response->response_phrase && *response->response_phrase)
+      continue_args["responsePhrase"] = std::string(response->response_phrase);
 
-    std::string headers_raw = response->response_headers;
-    json header_arr = json::array();
-    std::vector<std::string> headers = SplitString(headers_raw, "\n");
-    for (auto& it : headers) {
-      std::string key, value;
-      ExtractKeyValue(it, key, value);
-      key = TrimString(key);
-      value = TrimString(value);
+    if (response->response_headers && *response->response_headers) {
+      std::string headers_raw = response->response_headers;
+      json header_arr = json::array();
+      std::vector<std::string> headers = SplitString(headers_raw, "\n");
+      for (auto& it : headers) {
+        std::string key, value;
+        ExtractKeyValue(it, key, value);
+        key = TrimString(key);
+        value = TrimString(value);
 
-      json item = json::object();
-      item["name"] = key;
-      item["value"] = value;
-      header_arr.push_back(std::move(item));
+        json item = json::object();
+        item["name"] = key;
+        item["value"] = value;
+        header_arr.push_back(std::move(item));
+      }
+
+      continue_args["responseHeaders"] = header_arr;
     }
-
-    continue_args["responseHeaders"] = header_arr;
   } else {
-    continue_args["responseCode"] = obj->event_parameter["responseStatusCode"];
-    continue_args["responseHeaders"] = obj->event_parameter["responseHeaders"];
+    continue_args["responseCode"] = 200;
   }
 
   std::string mem;
@@ -353,24 +358,27 @@ void WINAPI ContinueResponse(ResourceResponseCallback* obj,
   continue_args["requestId"] = obj->event_parameter["requestId"];
   if (response) {
     continue_args["responseCode"] = response->response_code;
-    continue_args["responsePhrase"] = response->response_phrase;
+    if (response->response_phrase && *response->response_phrase)
+      continue_args["responsePhrase"] = response->response_phrase;
 
-    std::string headers_raw = response->response_headers;
-    json header_arr = json::array();
-    std::vector<std::string> headers = SplitString(headers_raw, "\n");
-    for (auto& it : headers) {
-      std::string key, value;
-      ExtractKeyValue(it, key, value);
-      key = TrimString(key);
-      value = TrimString(value);
+    if (response->response_headers && *response->response_headers) {
+      std::string headers_raw = response->response_headers;
+      json header_arr = json::array();
+      std::vector<std::string> headers = SplitString(headers_raw, "\n");
+      for (auto& it : headers) {
+        std::string key, value;
+        ExtractKeyValue(it, key, value);
+        key = TrimString(key);
+        value = TrimString(value);
 
-      json item = json::object();
-      item["name"] = key;
-      item["value"] = value;
-      header_arr.push_back(std::move(item));
+        json item = json::object();
+        item["name"] = key;
+        item["value"] = value;
+        header_arr.push_back(std::move(item));
+      }
+
+      continue_args["responseHeaders"] = header_arr;
     }
-
-    continue_args["responseHeaders"] = header_arr;
   } else {
     continue_args["responseCode"] = obj->event_parameter["responseStatusCode"];
     continue_args["responseHeaders"] = obj->event_parameter["responseHeaders"];
@@ -497,24 +505,27 @@ void WINAPI FulfillResponse(ResourceResponseCallback* obj,
   continue_args["requestId"] = obj->event_parameter["requestId"];
   if (response) {
     continue_args["responseCode"] = response->response_code;
-    continue_args["responsePhrase"] = response->response_phrase;
+    if (response->response_phrase && *response->response_phrase)
+      continue_args["responsePhrase"] = response->response_phrase;
 
-    std::string headers_raw = response->response_headers;
-    json header_arr = json::array();
-    std::vector<std::string> headers = SplitString(headers_raw, "\n");
-    for (auto& it : headers) {
-      std::string key, value;
-      ExtractKeyValue(it, key, value);
-      key = TrimString(key);
-      value = TrimString(value);
+    if (response->response_headers && *response->response_headers) {
+      std::string headers_raw = response->response_headers;
+      json header_arr = json::array();
+      std::vector<std::string> headers = SplitString(headers_raw, "\n");
+      for (auto& it : headers) {
+        std::string key, value;
+        ExtractKeyValue(it, key, value);
+        key = TrimString(key);
+        value = TrimString(value);
 
-      json item = json::object();
-      item["name"] = key;
-      item["value"] = value;
-      header_arr.push_back(std::move(item));
+        json item = json::object();
+        item["name"] = key;
+        item["value"] = value;
+        header_arr.push_back(std::move(item));
+      }
+
+      continue_args["responseHeaders"] = header_arr;
     }
-
-    continue_args["responseHeaders"] = header_arr;
   } else {
     continue_args["responseCode"] = obj->event_parameter["responseStatusCode"];
     continue_args["responseHeaders"] = obj->event_parameter["responseHeaders"];
