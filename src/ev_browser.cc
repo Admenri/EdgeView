@@ -1832,6 +1832,15 @@ void WINAPI RemoveHOOKScript(BrowserData* obj, LPCSTR id) {
       scoped_refptr(obj), std::string(id)));
 }
 
+void WINAPI NavigateToString(BrowserData* obj, LPCSTR string) {
+  obj->parent->PostUITask(base::BindOnce(
+      [](scoped_refptr<BrowserData> self, std::string str) {
+        self->core_webview->NavigateToString(
+            Utf8Conv::Utf8ToUtf16(str).c_str());
+      },
+      scoped_refptr(obj), std::string(string)));
+}
+
 }  // namespace
 
 DWORD fnBrowserTable[] = {
@@ -1892,6 +1901,7 @@ DWORD fnBrowserTable[] = {
     (DWORD)LoadBrowserExtension,
     (DWORD)GetProfileName,
     (DWORD)RemoveHOOKScript,
+    (DWORD)NavigateToString,
 };  // namespace edgeview
 
 namespace {

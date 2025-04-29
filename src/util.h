@@ -10,6 +10,7 @@
 #include <windows.h>
 #include <wrl/event.h>
 
+#undef __has_attribute
 #include "Utf8Conv.hpp"
 #include "WebView2.h"
 #include "WebView2EnvironmentOptions.h"
