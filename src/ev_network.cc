@@ -32,8 +32,10 @@ using CookieData = struct {
   BOOL is_session;
 };
 
-static void TransferCookie(WRL::ComPtr<ICoreWebView2Cookie> from,
+static void TransferCookie(const WRL::ComPtr<ICoreWebView2Cookie>& from,
                            CookieData* to) {
+  if (!from || !to) return;
+
   wil::unique_cotaskmem_string value = nullptr;
 
   from->get_Name(&value);
@@ -55,14 +57,40 @@ static void TransferCookie(WRL::ComPtr<ICoreWebView2Cookie> from,
   from->get_IsSession(&to->is_session);
 }
 
-static void TransferCookie(CookieData* from,
-                           WRL::ComPtr<ICoreWebView2Cookie> to) {
+static void TransferCookie(const CookieData* from,
+                           const WRL::ComPtr<ICoreWebView2Cookie>& to) {
+  if (!from || !to) return;
+
   to->put_Value(Utf8Conv::Utf8ToUtf16(from->value).c_str());
 
   to->put_Expires(from->expires);
   to->put_IsHttpOnly(from->http_only);
   to->put_SameSite(from->same_site);
   to->put_IsSecure(from->is_secure);
+}
+
+// Releases an array produced by GetCookies: the outer array, every CookieData
+// element and the strings owned by each element.
+// The old implementation only called free() on the outer block (and never
+// freed the elements at all), so every GetCookies call leaked everything.
+static void FreeCookieArray(LPVOID ary) {
+  if (!ary) return;
+
+  INT count = 0;
+  DWORD* elements = (DWORD*)GetAryElementInf(ary, &count);
+  for (INT i = 0; i < count; i++) {
+    CookieData* cookie = (CookieData*)elements[i];
+    if (!cookie) continue;
+
+    FreeComString(cookie->name);
+    FreeComString(cookie->value);
+    FreeComString(cookie->domain);
+    FreeComString(cookie->path);
+    edgeview_MemFree(cookie);
+    elements[i] = 0;
+  }
+
+  edgeview_MemFree(ary);
 }
 
 void WINAPI GetCookies(CookieManagerData* obj, LPCSTR url, LPVOID* ary) {
@@ -74,30 +102,60 @@ void WINAPI GetCookies(CookieManagerData* obj, LPCSTR url, LPVOID* ary) {
             WRL::Callback<ICoreWebView2GetCookiesCompletedHandler>(
                 [sync, ary](HRESULT result,
                             ICoreWebView2CookieList* cookieList) {
-                  FreeAryElement(*ary);
+                  // Release the result of the previous call first.
+                  if (ary) {
+                    FreeCookieArray(*ary);
+                    *ary = nullptr;
+                  }
+
+                  if (!ary || FAILED(result) || !cookieList) {
+                    sync->Notify();
+                    return S_OK;
+                  }
 
                   uint32_t cookie_size = 0;
                   cookieList->get_Count(&cookie_size);
+
                   std::vector<WRL::ComPtr<ICoreWebView2Cookie>> cookies;
+                  cookies.reserve(cookie_size);
                   for (uint32_t i = 0; i < cookie_size; ++i) {
                     WRL::ComPtr<ICoreWebView2Cookie> cookie;
                     cookieList->GetValueAtIndex(i, &cookie);
                     cookies.push_back(std::move(cookie));
                   }
 
-                  DWORD* pStrs = new DWORD[cookies.size()];
-                  for (size_t i = 0; i < cookies.size(); i++) {
+                  const size_t count = cookies.size();
+                  if (!count) {
+                    sync->Notify();
+                    return S_OK;
+                  }
+
+                  DWORD* pStrs = new DWORD[count];
+                  for (size_t i = 0; i < count; i++) {
+                    // One CookieData per cookie: the old code allocated
+                    // sizeof(CookieData) * count for every single element.
                     CookieData* pNewClass = static_cast<CookieData*>(
-                        edgeview_MemAlloc(sizeof(CookieData) * cookies.size()));
+                        edgeview_MemAlloc(sizeof(CookieData)));
+                    if (!pNewClass) {
+                      pStrs[i] = 0;
+                      continue;
+                    }
+
                     TransferCookie(cookies[i], pNewClass);
                     pStrs[i] = (DWORD)pNewClass;
                   }
 
-                  int nSize = cookies.size() * sizeof(DWORD);
+                  const size_t nSize = count * sizeof(DWORD);
                   LPSTR pAry =
                       (LPSTR)edgeview_MemAlloc(sizeof(INT) * 2 + nSize);
+                  if (!pAry) {
+                    delete[] pStrs;
+                    sync->Notify();
+                    return S_OK;
+                  }
+
                   *(LPINT)pAry = 1;
-                  *(LPINT)(pAry + sizeof(INT)) = cookies.size();
+                  *(LPINT)(pAry + sizeof(INT)) = (INT)count;
                   memcpy(pAry + sizeof(INT) * 2, pStrs, nSize);
                   delete[] pStrs;
 
@@ -255,21 +313,25 @@ void WINAPI ContinueRequest(ResourceRequestCallback* obj,
     if (request->post_data && *request->post_data)
       continue_args["postData"] = request->post_data;
 
-    std::string headers_raw = request->headers;
-    json header_arr = json::array();
-    std::vector<std::string> headers = SplitString(headers_raw, "\n");
-    for (auto& it : headers) {
-      std::string key, value;
-      ExtractKeyValue(it, key, value);
-      key = TrimString(key);
-      value = TrimString(value);
+    // headers may be nullptr (no header at all) - constructing a std::string
+    // from nullptr would be undefined behaviour.
+    if (request->headers) {
+      std::string headers_raw = request->headers;
+      json header_arr = json::array();
+      std::vector<std::string> headers = SplitString(headers_raw, "\n");
+      for (auto& it : headers) {
+        std::string key, value;
+        ExtractKeyValue(it, key, value);
+        key = TrimString(key);
+        value = TrimString(value);
 
-      json item = json::object();
-      item["name"] = key;
-      item["value"] = value;
-      header_arr.push_back(std::move(item));
+        json item = json::object();
+        item["name"] = key;
+        item["value"] = value;
+        header_arr.push_back(std::move(item));
+      }
+      continue_args["headers"] = header_arr;
     }
-    continue_args["headers"] = header_arr;
   }
 
   obj->browser->parent->PostUITask(base::BindOnce(
@@ -333,8 +395,11 @@ void WINAPI FulfillRequest(ResourceRequestCallback* obj,
   }
 
   std::string mem;
-  mem.assign(size, 0);
-  memcpy(&mem.front(), data, size);
+  // Guard against an empty/null body: &mem.front() on an empty string is UB.
+  if (data && size) {
+    mem.assign(size, 0);
+    memcpy(&mem.front(), data, size);
+  }
   continue_args["body"] = modp_b64_encode(mem);
 
   obj->browser->parent->PostUITask(base::BindOnce(
@@ -532,8 +597,11 @@ void WINAPI FulfillResponse(ResourceResponseCallback* obj,
   }
 
   std::string mem;
-  mem.assign(size, 0);
-  memcpy(&mem.front(), data, size);
+  // Guard against an empty/null body: &mem.front() on an empty string is UB.
+  if (data && size) {
+    mem.assign(size, 0);
+    memcpy(&mem.front(), data, size);
+  }
   continue_args["body"] = modp_b64_encode(mem);
 
   obj->browser->parent->PostUITask(base::BindOnce(

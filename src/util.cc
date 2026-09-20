@@ -6,21 +6,42 @@ namespace edgeview {
 
 LPSTR WrapComString(LPCWSTR oriStr) {
   if (!oriStr) return nullptr;
-  INT wideStrLen = wcslen(oriStr);
+
+  INT wideStrLen = static_cast<INT>(wcslen(oriStr));
   INT utf8Len =
       WideCharToMultiByte(CP_UTF8, 0, oriStr, wideStrLen, NULL, 0, NULL, NULL);
+
+  // Empty string or failed conversion: still return a safe (allocated)
+  // empty string so callers can always dereference the result.
+  if (utf8Len <= 0) {
+    LPSTR emptyStr = static_cast<LPSTR>(edgeview_MemAlloc(1));
+    if (emptyStr) emptyStr[0] = '\0';
+    return emptyStr;
+  }
+
   LPSTR utf8Str = static_cast<LPSTR>(edgeview_MemAlloc(utf8Len + 1));
   if (!utf8Str) return nullptr;
-  WideCharToMultiByte(CP_UTF8, 0, oriStr, wideStrLen, utf8Str, utf8Len, NULL,
-                      NULL);
+
+  if (!WideCharToMultiByte(CP_UTF8, 0, oriStr, wideStrLen, utf8Str, utf8Len,
+                           NULL, NULL)) {
+    edgeview_MemFree(utf8Str);
+    return nullptr;
+  }
+
   utf8Str[utf8Len] = '\0';
   return utf8Str;
 }
 
 LPSTR WrapComString(LPCSTR oriStr) {
+  if (!oriStr) return nullptr;
+
   size_t s = strlen(oriStr);
   LPSTR pstr = (LPSTR)edgeview_MemAlloc(s + 1);
-  RtlCopyMemory(pstr, oriStr, s);
+  if (!pstr) return nullptr;
+
+  // Copy s + 1 bytes so the terminating '\0' is written as well.
+  // Do not rely on the HEAP_ZERO_MEMORY behaviour of edgeview_MemAlloc here.
+  RtlCopyMemory(pstr, oriStr, s + 1);
 
   return pstr;
 }
@@ -52,19 +73,25 @@ LPBYTE GetAryElementInf(void* pAryData, LPINT pnElementCount) {
 }
 
 void FreeAryElement(void* pAryData) {
-  DWORD AryElementCount = 0;
-  LPINT* pArryPtr = (LPINT*)GetAryElementInf(pAryData, (LPINT)AryElementCount);
+  if (!pAryData) return;
 
-  for (INT i = 0; i < (INT)AryElementCount; i++) {
-    void* pElementData = *pArryPtr;
+  INT nElementCount = 0;
+  LPINT* pArryPtr =
+      (LPINT*)GetAryElementInf(pAryData, (LPINT)&nElementCount);
+
+  for (INT i = 0; i < nElementCount; i++) {
+    void* pElementData = (void*)(*pArryPtr);
     if (pElementData) {
-      free(pElementData);
-      *pArryPtr = NULL;
+      // Elements are allocated by edgeview_MemAlloc, so they must be
+      // released with HeapFree. The old code mixed in free(), which fails
+      // silently for process heap blocks and leaked every element.
+      edgeview_MemFree(pElementData);
+      *pArryPtr = 0;
     }
     pArryPtr++;
   }
 
-  free(pAryData);
+  edgeview_MemFree(pAryData);
 }
 
 EV_EXPORTS(MemAlloc, LPVOID)(size_t size) {

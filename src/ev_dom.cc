@@ -177,6 +177,11 @@ void WINAPI Element_QuerySelectorAll(DOMOperation* obj,
                                      LPCSTR selector,
                                      LPVOID* mem,
                                      uint32_t* size) {
+  // Always initialize the out parameters: the old code left them untouched
+  // (garbage for the caller, or a leaked block when the result was empty).
+  if (mem) *mem = nullptr;
+  if (size) *size = 0;
+
   json args;
   args["nodeId"] = node;
   args["selector"] = selector;
@@ -185,11 +190,14 @@ void WINAPI Element_QuerySelectorAll(DOMOperation* obj,
                                std::move(args));
   auto ary = ret.array();
 
-  if (ary.size()) {
-    *mem = edgeview_MemAlloc(ary.size() * sizeof(DWORD));
-    *size = ary.size();
-    for (size_t i = 0; i < ary.size(); ++i) {
-      *(((LPINT)*mem) + i) = ary[i].template get<int>();
+  if (ary.size() && mem && size) {
+    LPVOID buffer = edgeview_MemAlloc(ary.size() * sizeof(DWORD));
+    if (buffer) {
+      *mem = buffer;
+      *size = static_cast<uint32_t>(ary.size());
+      for (size_t i = 0; i < ary.size(); ++i) {
+        *(((LPINT)buffer) + i) = ary[i].template get<int>();
+      }
     }
   }
 }
@@ -332,21 +340,30 @@ void WINAPI Element_GetCanvasData(DOMOperation* obj,
                                   int index,
                                   LPVOID* ptr,
                                   uint32_t* size) {
+  // Initialize the out parameters first, otherwise a failed/non-string result
+  // leaves the caller reading uninitialized pointers and sizes.
+  if (ptr) *ptr = nullptr;
+  if (size) *size = 0;
+
   auto ret = ExecuteScriptSync(
       obj->browser.get(),
       std::format(
           "document.querySelectorAll(\"{}\")[{}].toDataURL('image/png')",
           std::string(selector), index));
 
-  if (ret.type() == json::value_t::string) {
+  if (ret.type() == json::value_t::string && ptr && size) {
     auto b64_str = ret.template get<std::string>();
     auto b64_data = b64_str.substr(b64_str.find(',') + 1, b64_str.size());
 
     auto raw_data = modp_b64_decode(b64_data);
+    if (raw_data.empty()) return;
 
-    *ptr = edgeview_MemAlloc(raw_data.size());
-    memcpy(*ptr, raw_data.data(), raw_data.size());
-    *size = raw_data.size();
+    LPVOID buffer = edgeview_MemAlloc(raw_data.size());
+    if (!buffer) return;
+
+    memcpy(buffer, raw_data.data(), raw_data.size());
+    *ptr = buffer;
+    *size = static_cast<uint32_t>(raw_data.size());
   }
 }
 

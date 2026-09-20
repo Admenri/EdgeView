@@ -1,6 +1,8 @@
 #pragma once
 
 #include <atomic>
+#include <map>
+#include <string>
 #include <thread>
 
 #include "base/memory/ref_counted.h"
@@ -110,6 +112,19 @@ struct BrowserData : public base::RefCounted<BrowserData> {
   LPVOID pCallback = nullptr;
 
   std::vector<scoped_refptr<FrameData>> frames;
+
+  // DevTools protocol event handler tokens, keyed by a dedup key rather than
+  // the raw event name: built-in BindEventForUpdate handlers use the
+  // "internal/" prefix (see ev_browser.cc), so they dedup independently from
+  // EPL-side SetCDPEventReceiver calls.
+  //
+  // Re-binding a key must remove the previous handler first. Otherwise every
+  // re-bind stacks one more handler on the same receiver and the callback ends
+  // up firing once per accumulated registration.
+  //
+  // Touched only on the UI thread, which is where BindEventForUpdate /
+  // SetCDPEventReceiver run.
+  std::map<std::wstring, EventRegistrationToken> cdp_event_tokens;
 
   base::WeakPtrFactory<BrowserData> weak_ptr_{this};
 

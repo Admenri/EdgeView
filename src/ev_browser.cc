@@ -110,8 +110,9 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
                   wil::unique_cotaskmem_string raw_title;
                   weak_ptr->core_webview->get_DocumentTitle(&raw_title);
 
-                  weak_ptr->dispatcher->OnDocumentTitleChanged(
-                      WrapComString(raw_title));
+                  // Owned by this scope: released when the callback returns.
+                  ScopedComString title = WrapComString(raw_title);
+                  weak_ptr->dispatcher->OnDocumentTitleChanged(title);
                 },
                 weak_ptr));
 
@@ -153,7 +154,8 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
                        args) {
                   wil::unique_cotaskmem_string raw_url = nullptr;
                   args->get_Uri(&raw_url);
-                  LPCSTR url = WrapComString(raw_url);
+                  // Owned by this scope: released when the callback returns.
+                  ScopedComString url = WrapComString(raw_url);
 
                   BOOL user_gesture = FALSE, is_redirect = FALSE;
                   args->get_IsUserInitiated(&user_gesture);
@@ -184,9 +186,10 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
                   uint64_t nav_id = 0;
                   args->get_NavigationId(&nav_id);
 
+                  ScopedComString header_str = WrapComString(headers.c_str());
                   BOOL cancel_nav = weak_ptr->dispatcher->OnBeforeNavigation(
-                      nullptr, url, user_gesture, is_redirect,
-                      WrapComString(headers.c_str()), nav_id);
+                      nullptr, url, user_gesture, is_redirect, header_str,
+                      nav_id);
 
                   args->put_Cancel(cancel_nav);
                 },
@@ -308,9 +311,13 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
                   wil::unique_cotaskmem_string raw_deftext = nullptr;
                   args->get_DefaultText(&raw_deftext);
 
+                  // Owned by this scope: released when the callback returns.
+                  ScopedComString url = WrapComString(raw_url);
+                  ScopedComString message = WrapComString(raw_message);
+                  ScopedComString deftext = WrapComString(raw_deftext);
+
                   weak_ptr->dispatcher->OnScriptDialogRequested(
-                      WrapComString(raw_url), kind, WrapComString(raw_message),
-                      WrapComString(raw_deftext), delegate);
+                      url, kind, message, deftext, delegate);
                 },
                 weak_ptr, std::move(args_obj), std::move(delegate)));
 
@@ -363,8 +370,11 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
                   BOOL user_gesture = FALSE;
                   delegate->core_delegate->get_IsUserInitiated(&user_gesture);
 
+                  // Owned by this scope: released when the callback returns.
+                  ScopedComString url_str = WrapComString(url);
+
                   weak_ptr->dispatcher->OnPermissionRequested(
-                      WrapComString(url), kind, user_gesture, delegate);
+                      url_str, kind, user_gesture, delegate);
                 },
                 weak_ptr, delegate));
 
@@ -414,8 +424,12 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
                   callback->core_callback->get_Uri(&url);
                   callback->core_callback->get_Challenge(&challenge);
 
+                  // Owned by this scope: released when the callback returns.
+                  ScopedComString url_str = WrapComString(url);
+                  ScopedComString challenge_str = WrapComString(challenge);
+
                   weak_ptr->dispatcher->BasicAuthRequested(
-                      WrapComString(url), WrapComString(challenge), callback);
+                      url_str, challenge_str, callback);
                 },
                 weak_ptr, callback));
 
@@ -433,13 +447,22 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
             wil::unique_cotaskmem_string json_args = nullptr;
             args->get_WebMessageAsJson(&json_args);
 
+            // Bind plain UTF-8 strings instead of raw heap blocks so nothing
+            // leaks in case this closure is dropped before it ever runs.
+            std::string source_url = Utf8Conv::Utf16ToUtf8(src_url.get());
+            std::string message_json = Utf8Conv::Utf16ToUtf8(json_args.get());
+
             weak_ptr->parent->PostEvent(base::BindOnce(
-                [](base::WeakPtr<BrowserData> weak_ptr, LPCSTR source_url,
-                   LPCSTR json_args) {
-                  weak_ptr->dispatcher->OnReceivedWebMessage(
-                      nullptr, source_url, json_args);
+                [](base::WeakPtr<BrowserData> weak_ptr, std::string source_url,
+                   std::string json_args) {
+                  // Owned by this scope: released after the dispatch.
+                  ScopedComString url_str = WrapComString(source_url.c_str());
+                  ScopedComString args_str = WrapComString(json_args.c_str());
+
+                  weak_ptr->dispatcher->OnReceivedWebMessage(nullptr, url_str,
+                                                             args_str);
                 },
-                weak_ptr, WrapComString(src_url), WrapComString(json_args)));
+                weak_ptr, std::move(source_url), std::move(message_json)));
 
             return S_OK;
           })
@@ -503,7 +526,8 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
                                  args) {
                             wil::unique_cotaskmem_string raw_url = nullptr;
                             args->get_Uri(&raw_url);
-                            LPCSTR url = WrapComString(raw_url);
+                            // Owned by this scope: released with the callback.
+                            ScopedComString url = WrapComString(raw_url);
 
                             BOOL user_gesture = FALSE, is_redirect = FALSE;
                             args->get_IsUserInitiated(&user_gesture);
@@ -536,11 +560,12 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
                             uint64_t nav_id = 0;
                             args->get_NavigationId(&nav_id);
 
+                            ScopedComString header_str =
+                                WrapComString(headers.c_str());
                             BOOL cancel_nav =
                                 weak_ptr->dispatcher->OnBeforeNavigation(
                                     frame_weak_ptr.get(), url, user_gesture,
-                                    is_redirect, WrapComString(headers.c_str()),
-                                    nav_id);
+                                    is_redirect, header_str, nav_id);
 
                             args->put_Cancel(cancel_nav);
                           },
@@ -611,15 +636,28 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
                       wil::unique_cotaskmem_string json_args = nullptr;
                       args->get_WebMessageAsJson(&json_args);
 
+                      // Bind plain UTF-8 strings instead of raw heap blocks so
+                      // nothing leaks if the closure is dropped before running.
+                      std::string source_url =
+                          Utf8Conv::Utf16ToUtf8(src_url.get());
+                      std::string message_json =
+                          Utf8Conv::Utf16ToUtf8(json_args.get());
+
                       weak_ptr->parent->PostEvent(base::BindOnce(
                           [](base::WeakPtr<BrowserData> weak_ptr,
                              base::WeakPtr<FrameData> frame_weak_ptr,
-                             LPCSTR source_url, LPCSTR json_args) {
+                             std::string source_url, std::string json_args) {
+                            // Owned by this scope: released after the dispatch.
+                            ScopedComString url_str =
+                                WrapComString(source_url.c_str());
+                            ScopedComString args_str =
+                                WrapComString(json_args.c_str());
+
                             weak_ptr->dispatcher->OnReceivedWebMessage(
-                                frame_weak_ptr.get(), source_url, json_args);
+                                frame_weak_ptr.get(), url_str, args_str);
                           },
-                          weak_ptr, frame_weak_ptr, WrapComString(src_url),
-                          WrapComString(json_args)));
+                          weak_ptr, frame_weak_ptr, std::move(source_url),
+                          std::move(message_json)));
 
                       return S_OK;
                     })
@@ -638,8 +676,10 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
                 [](base::WeakPtr<BrowserData> weak_ptr) {
                   wil::unique_cotaskmem_string raw_favicon = nullptr;
                   weak_ptr->core_webview->get_FaviconUri(&raw_favicon);
-                  weak_ptr->dispatcher->OnFaviconChanged(
-                      WrapComString(raw_favicon));
+
+                  // Owned by this scope: released when the callback returns.
+                  ScopedComString favicon = WrapComString(raw_favicon);
+                  weak_ptr->dispatcher->OnFaviconChanged(favicon);
                 },
                 weak_ptr));
 
@@ -674,8 +714,9 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
                   wil::unique_cotaskmem_string status_text = nullptr;
                   weak_ptr->core_webview->get_StatusBarText(&status_text);
 
-                  weak_ptr->dispatcher->OnStatusTextChanged(
-                      WrapComString(status_text));
+                  // Owned by this scope: released when the callback returns.
+                  ScopedComString status = WrapComString(status_text);
+                  weak_ptr->dispatcher->OnStatusTextChanged(status);
                 },
                 weak_ptr));
 
@@ -694,9 +735,6 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
             weak_ptr->parent->PostEvent(base::BindOnce(
                 [](base::WeakPtr<BrowserData> weak_ptr,
                    COREWEBVIEW2_PROCESS_FAILED_KIND kind) {
-                  wil::unique_cotaskmem_string status_text = nullptr;
-                  weak_ptr->core_webview->get_StatusBarText(&status_text);
-
                   weak_ptr->dispatcher->OnProcessFailed(kind);
                 },
                 weak_ptr, kind));
@@ -707,6 +745,64 @@ void BindEventForWebView(scoped_refptr<BrowserData> browser_wrapper) {
       nullptr);
 }
 
+namespace {
+
+// Key prefix for the built-in handlers registered by BindEventForUpdate. They
+// live in their own key space so that an EPL-side
+// SetCDPEventReceiver("<same protocol event>") adds another listener instead of
+// silently displacing the built-in dispatch.
+const wchar_t kInternalCDPEventKeyPrefix[] = L"internal/";
+
+// Registers a DevTools protocol event handler and remembers its registration
+// token under `key`, so that a later registration with the same key removes the
+// previous handler first.
+//
+// BindEventForUpdate runs both when the webview is created and again from
+// SetHandled (every time a new window request is handled). Registering the same
+// event twice stacks a second handler on the same receiver, so the callback is
+// delivered twice. Re-binding a key therefore drops the previous handler,
+// keeping exactly one live handler per key.
+//
+// Must be called on the UI thread: BrowserData::cdp_event_tokens is UI-thread
+// only.
+void AddCDPEventHandlerByKey(
+    BrowserData* browser,
+    const std::wstring& key,
+    const std::wstring& event_name,
+    ICoreWebView2DevToolsProtocolEventReceivedEventHandler* handler) {
+  if (!browser || !browser->core_webview || !handler) return;
+
+  WRL::ComPtr<ICoreWebView2DevToolsProtocolEventReceiver> receiver = nullptr;
+  if (FAILED(browser->core_webview->GetDevToolsProtocolEventReceiver(
+          event_name.c_str(), &receiver)) ||
+      !receiver) {
+    return;
+  }
+
+  auto it = browser->cdp_event_tokens.find(key);
+  if (it != browser->cdp_event_tokens.end()) {
+    // Drop the stale handler, otherwise the same event is dispatched twice.
+    receiver->remove_DevToolsProtocolEventReceived(it->second);
+    browser->cdp_event_tokens.erase(it);
+  }
+
+  EventRegistrationToken token{};
+  if (SUCCEEDED(receiver->add_DevToolsProtocolEventReceived(handler, &token))) {
+    browser->cdp_event_tokens[key] = token;
+  }
+}
+
+// Built-in bindings used by BindEventForUpdate.
+void AddCDPEventHandler(
+    BrowserData* browser,
+    const std::wstring& event_name,
+    ICoreWebView2DevToolsProtocolEventReceivedEventHandler* handler) {
+  AddCDPEventHandlerByKey(browser, kInternalCDPEventKeyPrefix + event_name,
+                          event_name, handler);
+}
+
+}  // namespace
+
 void BindEventForUpdate(scoped_refptr<BrowserData> browser_wrapper) {
   base::WeakPtr<BrowserData> weak_ptr = browser_wrapper->weak_ptr_.GetWeakPtr();
   browser_wrapper->core_webview->CallDevToolsProtocolMethod(L"DOM.enable",
@@ -714,10 +810,8 @@ void BindEventForUpdate(scoped_refptr<BrowserData> browser_wrapper) {
 
   // ------------------------ CDP event extensions ------------------------
   // Resource intercept event
-  WRL::ComPtr<ICoreWebView2DevToolsProtocolEventReceiver> fetch_receiver;
-  browser_wrapper->core_webview->GetDevToolsProtocolEventReceiver(
-      L"Fetch.requestPaused", &fetch_receiver);
-  fetch_receiver->add_DevToolsProtocolEventReceived(
+  AddCDPEventHandler(
+      browser_wrapper.get(), L"Fetch.requestPaused",
       WRL::Callback<ICoreWebView2DevToolsProtocolEventReceivedEventHandler>(
           [weak_ptr](
               ICoreWebView2* sender,
@@ -753,17 +847,14 @@ void BindEventForUpdate(scoped_refptr<BrowserData> browser_wrapper) {
 
             return S_OK;
           })
-          .Get(),
-      nullptr);
+          .Get());
 
   // ------------------------ CDP event extensions ------------------------
   // File chooser event
   browser_wrapper->core_webview->CallDevToolsProtocolMethod(L"Page.enable",
                                                             L"{}", nullptr);
-  WRL::ComPtr<ICoreWebView2DevToolsProtocolEventReceiver> filechooser_receiver;
-  browser_wrapper->core_webview->GetDevToolsProtocolEventReceiver(
-      L"Page.fileChooserOpened", &filechooser_receiver);
-  filechooser_receiver->add_DevToolsProtocolEventReceived(
+  AddCDPEventHandler(
+      browser_wrapper.get(), L"Page.fileChooserOpened",
       WRL::Callback<ICoreWebView2DevToolsProtocolEventReceivedEventHandler>(
           [weak_ptr](
               ICoreWebView2* sender,
@@ -789,24 +880,23 @@ void BindEventForUpdate(scoped_refptr<BrowserData> browser_wrapper) {
                       "selectMultiple";
                   int node_id = json_obj["backendNodeId"].template get<int>();
 
-                  dispatcher->OnFileChooserRequested(
-                      WrapComString(frame_id.c_str()), multiselect, node_id);
+                  // Owned by this scope: released after the dispatch.
+                  ScopedComString frame_id_str = WrapComString(frame_id.c_str());
+                  dispatcher->OnFileChooserRequested(frame_id_str, multiselect,
+                                                     node_id);
                 },
                 weak_ptr->dispatcher, std::move(json_obj)));
 
             return S_OK;
           })
-          .Get(),
-      nullptr);
+          .Get());
 
   // ------------------------ CDP event extensions ------------------------
   // Console event
   browser_wrapper->core_webview->CallDevToolsProtocolMethod(L"Console.enable",
                                                             L"{}", nullptr);
-  WRL::ComPtr<ICoreWebView2DevToolsProtocolEventReceiver> console_receiver;
-  browser_wrapper->core_webview->GetDevToolsProtocolEventReceiver(
-      L"Console.messageAdded", &console_receiver);
-  console_receiver->add_DevToolsProtocolEventReceived(
+  AddCDPEventHandler(
+      browser_wrapper.get(), L"Console.messageAdded",
       WRL::Callback<ICoreWebView2DevToolsProtocolEventReceivedEventHandler>(
           [weak_ptr](
               ICoreWebView2* sender,
@@ -831,8 +921,7 @@ void BindEventForUpdate(scoped_refptr<BrowserData> browser_wrapper) {
 
             return S_OK;
           })
-          .Get(),
-      nullptr);
+          .Get());
 }
 
 namespace {
@@ -1812,12 +1901,14 @@ void WINAPI SetCDPEventReceiver(BrowserData* obj,
   obj->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<BrowserData> obj, std::string event_name,
          CDPEventReceivedCB callback, LPVOID param) {
-        WRL::ComPtr<ICoreWebView2DevToolsProtocolEventReceiver> receiver =
-            nullptr;
-        obj->core_webview->GetDevToolsProtocolEventReceiver(
-            Utf8Conv::Utf8ToUtf16(event_name).c_str(), &receiver);
-
-        receiver->add_DevToolsProtocolEventReceived(
+        // Keyed by the plain event name: registering the same event again
+        // replaces the previous EPL handler, so the callback is invoked once per
+        // event instead of once per accumulated registration. Built-in
+        // BindEventForUpdate handlers use a separate key space, so they are not
+        // affected.
+        std::wstring cdp_event = Utf8Conv::Utf8ToUtf16(event_name);
+        AddCDPEventHandlerByKey(
+            obj.get(), cdp_event, cdp_event,
             WRL::Callback<
                 ICoreWebView2DevToolsProtocolEventReceivedEventHandler>(
                 [callback, param](
@@ -1842,8 +1933,7 @@ void WINAPI SetCDPEventReceiver(BrowserData* obj,
 
                   return S_OK;
                 })
-                .Get(),
-            nullptr);
+                .Get());
       },
       scoped_refptr(obj), std::string(event_name), callback, param));
 }

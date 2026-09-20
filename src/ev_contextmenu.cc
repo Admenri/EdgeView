@@ -64,7 +64,9 @@ void WINAPI GetTargetParams(ContextMenuParams* obj,
         target->get_SourceUri(&source_url);
         data->source_url = WrapComString(source_url);
 
-        target->get_HasSourceUri(&data->has_selection);
+        // NOTE: this used to query HasSourceUri() again, so has_selection
+        // always mirrored has_source_url instead of the real flag.
+        target->get_HasSelection(&data->has_selection);
         wil::unique_cotaskmem_string selection = nullptr;
         target->get_SelectionText(&selection);
         data->selection = WrapComString(selection);
@@ -138,6 +140,8 @@ void WINAPI CreateMenuItem(ContextMenuParams* obj, LPCSTR label,
 
           pMem = GlobalLock(hMem);
           if (!pMem) {
+            // The HGLOBAL was never handed to the stream, release it here.
+            GlobalFree(hMem);
             is.Reset();
             goto CreateItem;
           }
@@ -327,15 +331,22 @@ LPCSTR WINAPI GetShortcutDesc(ContextMenuItem* obj) {
 
 void WINAPI GetIcon(ContextMenuItem* obj, LPVOID* icon_data,
                     int32_t* icon_size) {
+  // Always initialize the out parameters so the caller never reads garbage.
+  if (icon_data) *icon_data = nullptr;
+  if (icon_size) *icon_size = 0;
+
   obj->browser->parent->PostUITask(base::BindOnce(
       [](scoped_refptr<ContextMenuItem> self, scoped_refptr<Semaphore> sync,
          LPVOID* icon_data, int32_t* icon_size) {
         WRL::ComPtr<IStream> is = nullptr;
-        auto ret = SUCCEEDED(self->core_item->get_Icon(&is));
+        self->core_item->get_Icon(&is);
 
-        if (!is) return sync->Notify();
+        if (!is || !icon_data || !icon_size) {
+          sync->Notify();
+          return;
+        }
 
-        STATSTG stat;
+        STATSTG stat = {0};
         is->Stat(&stat, STATFLAG_NONAME);
 
         LARGE_INTEGER linfo;
@@ -343,9 +354,24 @@ void WINAPI GetIcon(ContextMenuItem* obj, LPVOID* icon_data,
         is->Seek(linfo, STREAM_SEEK_SET, NULL);
 
         uint32_t size = stat.cbSize.LowPart;
+        if (!size) {
+          sync->Notify();
+          return;
+        }
+
         uint8_t* buf = static_cast<uint8_t*>(edgeview_MemAlloc(size));
-        ULONG dummy = 0;
-        is->Read(buf, size, &dummy);
+        if (!buf) {
+          sync->Notify();
+          return;
+        }
+
+        ULONG read = 0;
+        is->Read(buf, size, &read);
+
+        // The old implementation allocated the buffer but never handed it
+        // back, so every call leaked the icon data.
+        *icon_data = buf;
+        *icon_size = static_cast<int32_t>(read);
 
         sync->Notify();
       },
